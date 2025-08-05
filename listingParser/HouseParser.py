@@ -8,6 +8,7 @@ load_dotenv()
 from Prompts import *
 from langchain.chains import LLMChain
 from models.ListingInfo import Listing
+from MongoDB import MongoDBClient
 
 listing_text = """
 *Permanent Accommodation available.”
@@ -50,20 +51,33 @@ def extractDetails():
         ("human", human_prompt_template)
     ])
 
-
-    chain = LLMChain(
-        llm=llm,
-        prompt=chat_prompt
-    )
+    chain = chat_prompt | llm
     response = chain.invoke({"listing": listing_text})
+    raw_text = response.content.strip() if hasattr(response, "content") else response['text'].strip()
+
+    # Remove markdown code block formatting
+    if raw_text.startswith("```json"):
+        raw_text = raw_text[7:]
+    if raw_text.endswith("```"):
+        raw_text = raw_text[:-3]
+
     try:
-        extracted_data = json.loads(response['text'])
-        parsed_listing=Listing(**extracted_data)
-        print(parsed_listing)
+        extracted_data = json.loads(raw_text)
+        parsed_listing = Listing(**extracted_data)
+        listing_dict = parsed_listing.dict()
+
+        # ✅ Print JSON-formatted output
+        print(json.dumps(parsed_listing.dict(), indent=4))
+
+        mongo_client = MongoDBClient()  # Will auto use DATABASE_NAME from .env
+        collection = mongo_client.database["listings"]
+        result = collection.insert_one(listing_dict)
+
+        print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")
+
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
-        print(f"Raw LLM response: {response['text']}")
-
+        print(f"Raw LLM response: {response}")
 
 
 extractDetails()
