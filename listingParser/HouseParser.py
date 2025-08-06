@@ -1,3 +1,4 @@
+from itertools import chain
 import json
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,6 +10,9 @@ from Prompts import *
 from langchain.chains import LLMChain
 from models.ListingInfo import Listing
 from MongoDB import MongoDBClient
+from duplicates import CatchDuplicateListings
+from bson import ObjectId
+
 
 listing_text = """
 *Permanent Accommodation available.”
@@ -43,7 +47,10 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.2,
     google_api_key="AIzaSyCK33vqrJ9XZKmC6zgwEEgvld90HAfhuR8",
 )
-
+def convert_objectid(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 def extractDetails():
     chat_prompt = ChatPromptTemplate.from_messages([
@@ -64,20 +71,32 @@ def extractDetails():
     try:
         extracted_data = json.loads(raw_text)
         parsed_listing = Listing(**extracted_data)
-        listing_dict = parsed_listing.dict()
-
-        # ✅ Print JSON-formatted output
-        print(json.dumps(parsed_listing.dict(), indent=4))
+        listing_dict = parsed_listing.model_dump()
 
         mongo_client = MongoDBClient()  # Will auto use DATABASE_NAME from .env
         collection = mongo_client.database["listings"]
-        result = collection.insert_one(listing_dict)
 
+        duplicate_checker = CatchDuplicateListings()
+
+        existing_listings = list(collection.find({
+            "contact.phone_numbers": {"$in": listing_dict["contact"]["phone_numbers"]}
+        }))
+
+        is_duplicate, matched_listing = duplicate_checker.is_similar_listing(listing_dict, existing_listings)
+
+        if is_duplicate:
+            print("⚠️ Similar listing already exists:")
+            print(json.dumps(matched_listing, indent=4, default=convert_objectid))
+            print("\n❗Skipping insertion.")
+            return
+
+        # ✅ Save the listing and print confirmation
+        result = collection.insert_one(listing_dict)
+        print(json.dumps(listing_dict, indent=4, default=convert_objectid))  # Only print non-duplicate
         print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
         print(f"Raw LLM response: {response}")
-
 
 extractDetails()
