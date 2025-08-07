@@ -53,16 +53,27 @@ def convert_objectid(obj):
     raise TypeError(f"Type {type(obj)} not serializable")
 
 def extractDetails():
+    # 🚨 Step 1: SCAM DETECTION (on raw listing_text)
+    scam_chain = ChatPromptTemplate.from_messages([
+        ("system", fake_scam_agent),
+        ("human", "{listing}")
+    ]) | llm
+    scam_result_raw = scam_chain.invoke({"listing": listing_text})
+    scam_response = scam_result_raw.content.strip() if hasattr(scam_result_raw, "content") else scam_result_raw['text'].strip()
+
+    if scam_response.upper() == "YES":
+        print("❗ Scam listing detected. Skipping extraction and insertion.")
+        return
+
+    # ✅ Step 2: Extract listing details
     chat_prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt_template),
         ("human", human_prompt_template)
     ])
-
     chain = chat_prompt | llm
     response = chain.invoke({"listing": listing_text})
     raw_text = response.content.strip() if hasattr(response, "content") else response['text'].strip()
 
-    # Remove markdown code block formatting
     if raw_text.startswith("```json"):
         raw_text = raw_text[7:]
     if raw_text.endswith("```"):
@@ -73,11 +84,12 @@ def extractDetails():
         parsed_listing = Listing(**extracted_data)
         listing_dict = parsed_listing.model_dump()
 
-        mongo_client = MongoDBClient()  # Will auto use DATABASE_NAME from .env
+        # ✅ Step 3: Connect to MongoDB
+        mongo_client = MongoDBClient()
         collection = mongo_client.database["listings"]
 
+        # 🔍 Step 4: Check for duplicates
         duplicate_checker = CatchDuplicateListings()
-
         existing_listings = list(collection.find({
             "contact.phone_numbers": {"$in": listing_dict["contact"]["phone_numbers"]}
         }))
@@ -90,13 +102,12 @@ def extractDetails():
             print("\n❗Skipping insertion.")
             return
 
-        # ✅ Save the listing and print confirmation
+        # 💾 Step 5: Store the listing
         result = collection.insert_one(listing_dict)
-        print(json.dumps(listing_dict, indent=4, default=convert_objectid))  # Only print non-duplicate
+        print(json.dumps(listing_dict, indent=4, default=convert_objectid))
         print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
         print(f"Raw LLM response: {response}")
-
 extractDetails()
