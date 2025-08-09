@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, ConfigDict
+from typing import Any, Dict, List
 
 
 class RentInfo(BaseModel):
@@ -36,3 +36,6 @@ class Listing(BaseModel):
     amenities: List[str]
     preferences: str
     contact: ContactInfo
+    extras: Dict[str, Any]
+    model_config = ConfigDict(extra="allow")
+
