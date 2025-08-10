@@ -5,7 +5,8 @@ onceptual Workflow Diagram
   (Tool: `parse_listing`)
       ↓
 [ Structured Listing Data (JSON) ]
-      ↓
+
+
 [ Agent 2: Duplicate Checker ]
   (Tool: `search_database_for_duplicates`)
       ↓
@@ -20,3 +21,9 @@ onceptual Workflow Diagram
   (Logic based on combined results)
       ↓
 [ Final Action: Store | Flag for Review | Reject ]
+
+--> Sent to Mogno DB
+
+
+
+49lQfXbbW7Bm1oIv.
