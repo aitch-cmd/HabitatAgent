@@ -1,7 +1,7 @@
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from listingParser.Prompts import *
+from agents.Prompts import *
 from listingParser.models.ListingInfo import Listing
 
 llm = ChatGoogleGenerativeAI(
@@ -22,7 +22,7 @@ def getPromptTemplate(listing_text:str, parser):
                                                    input=listing_text)
     return formatted_prompt
 
-def parseHouseListing(listing_text:str):
+def parseHouseListing(listing_text:str)->Listing:
 
     parser=PydanticOutputParser(pydantic_object=Listing)
     formatted_prompt = getPromptTemplate(listing_text, parser)

@@ -46,4 +46,12 @@ def reply_sms():
     except Exception as ex:
         return Response(ex, mimetype='text/xml')
 
+@app.route("/mock/capture_wa_message", methods=['POST'])
+def mock_sms():
+    body = request.form.get("Body")  # Text message content
+    print(body)
+
+
+
+
 

@@ -1,8 +1,6 @@
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from listingParser.Prompts import *
-from listingParser.models.ListingInfo import Listing
+from agents.Prompts import *
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-pro",
