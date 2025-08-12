@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Any, Dict, List
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Dict, List, Optional
 
 
 class RentInfo(BaseModel):
@@ -24,6 +24,18 @@ class ContactInfo(BaseModel):
     contact_method: str
 
 
+class SecondaryContact(BaseModel):
+    """Model for secondary contact details."""
+    name: str
+    phone_number: str
+    email: Optional[str] = None
+    relationship: str
+
+
+class CanBeSharedByTwoPeople:
+    allowed:bool
+    rent:RentInfo
+
 class Listing(BaseModel):
     """Main model for the property listing."""
     property_type: str
@@ -31,11 +43,12 @@ class Listing(BaseModel):
     bathrooms: int
     rent: RentInfo
     availability_date: str
+    is_available: bool= True
     lease_terms: str
     location: LocationInfo
     amenities: List[str]
     preferences: str
     contact: ContactInfo
+    secondary_contacts: List[SecondaryContact]
     extras: Dict[str, Any]
     model_config = ConfigDict(extra="allow")
-

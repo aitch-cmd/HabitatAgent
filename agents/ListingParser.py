@@ -27,5 +27,6 @@ def parseHouseListing(listing_text:str)->Listing:
     parser=PydanticOutputParser(pydantic_object=Listing)
     formatted_prompt = getPromptTemplate(listing_text, parser)
     response = llm.invoke(formatted_prompt)
+    print(response.content)
     listing_instance = parser.parse(response.content)
     return listing_instance

@@ -5,12 +5,11 @@ onceptual Workflow Diagram
   (Tool: `parse_listing`)
       ↓
 [ Structured Listing Data (JSON) ]
-
-
+      ↓
 [ Agent 2: Duplicate Checker ]
   (Tool: `search_database_for_duplicates`)
       ↓
-[ Result: `is_duplicate` (boolean), `confidence_score` (number) ]
+[ Result: `is_duplicate` (boolean), `confidence_score` (number) ]   --->
       ↓
 [ Agent 3: Fake/Scam Detector ]
   (Tool: `check_scam_red_flags`)

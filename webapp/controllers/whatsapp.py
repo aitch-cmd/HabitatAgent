@@ -1,21 +1,14 @@
-
-import datetime
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-from flask import Flask, request, Response
+from flask import Blueprint, request, Response, jsonify
 from twilio.twiml.messaging_response import MessagingResponse
-from twilio_service.reciver import getSingleMessageInfo,parseMessage
+
+from listingParser.HouseParser import extractDetails
+from twilio_service.reciver import getSingleMessageInfo, parseMessage
+
+whatsapp_bp = Blueprint("whatsapp", __name__)
 
 
 
-
-load_dotenv(dotenv_path=Path("../.env"))
-app = Flask(__name__)
-
-
-
-@app.route("/capture_wa_message", methods=['POST'])
+@whatsapp_bp.route("/capture_wa_message", methods=['POST'])
 def reply_sms():
 
     try:
@@ -46,12 +39,16 @@ def reply_sms():
     except Exception as ex:
         return Response(ex, mimetype='text/xml')
 
-@app.route("/mock/capture_wa_message", methods=['POST'])
+@whatsapp_bp.route("/mock/capture_wa_message", methods=['POST'])
 def mock_sms():
-    body = request.form.get("Body")  # Text message content
-    print(body)
+    data = request.get_json(silent=True)  # Try to parse JSON, but don’t error if fails
+    if data and isinstance(data, dict):
+        body = data.get("Body")
+    else:
+        # Fall back to form data
+        body = request.form.get("Body")
 
+    if not body:
+        return jsonify({"error": "Bad request: missing 'Body'"}), 400
 
-
-
-
+    return extractDetails(data["Body"])
