@@ -41,7 +41,7 @@ JSON Schema:
 """
 
 
-human_prompt_template = "Extract the information from this real estate listing:\n\n{listing}"
+human_prompt_template = "Extract details from this listing:\n\n{input}\n\n{format_instructions}"
 
 fake_scam_agent = """
 You are a scam detection agent designed to analyze room rental listings and identify potential scams or fraudulent postings.

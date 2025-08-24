@@ -9,7 +9,7 @@ onceptual Workflow Diagram
 [ Agent 2: Duplicate Checker ]
   (Tool: `search_database_for_duplicates`)
       ↓
-[ Result: `is_duplicate` (boolean), `confidence_score` (number) ]
+[ Result: `is_duplicate` (boolean), `confidence_score` (number) ]   --->
       ↓
 [ Agent 3: Fake/Scam Detector ]
   (Tool: `check_scam_red_flags`)
@@ -20,3 +20,9 @@ onceptual Workflow Diagram
   (Logic based on combined results)
       ↓
 [ Final Action: Store | Flag for Review | Reject ]
+
+--> Sent to Mogno DB
+
+
+
+49lQfXbbW7Bm1oIv.

@@ -1,5 +1,5 @@
 import json
-from MongoDB.connection import MongoDBClient
+from database.mongodb_client import MongoDBClient
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 

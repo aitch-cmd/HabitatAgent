@@ -1,18 +1,13 @@
-from itertools import chain
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-import os
-from dotenv import load_dotenv
-load_dotenv()
-from Prompts import *
-from langchain.chains import LLMChain
-from models.ListingInfo import Listing
-from MongoDB.connection import MongoDBClient
-from duplicates import CatchDuplicateListings
-from bson import ObjectId
 
+from dotenv import load_dotenv
+
+from listingParser.duplicates import CatchDuplicateListings
+
+load_dotenv()
+from database.mongodb_client import MongoDBClient
+from agents.ListingParser import parseHouseListing
+from agents.scam_checker import checkIfListingIsValid
 
 listing_text = """
 *Permanent Accommodation available.”
@@ -41,69 +36,62 @@ Please text if you have any questions:
 """
 
 
-# Initialize Gemini Pro
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    temperature=0.2,
-    google_api_key="AIzaSyCK33vqrJ9XZKmC6zgwEEgvld90HAfhuR8",
-)
-def convert_objectid(obj):
-    if isinstance(obj, ObjectId):
-        return str(obj)
-    raise TypeError(f"Type {type(obj)} not serializable")
+def extractDetails(listing:str):
 
-def extractDetails():
-    # 🚨 Step 1: SCAM DETECTION (on raw listing_text)
-    scam_chain = ChatPromptTemplate.from_messages([
-        ("system", fake_scam_agent),
-        ("human", "{listing}")
-    ]) | llm
-    scam_result_raw = scam_chain.invoke({"listing": listing_text})
-    scam_response = scam_result_raw.content.strip() if hasattr(scam_result_raw, "content") else scam_result_raw['text'].strip()
+    # # 🚨 Step 1: SCAM DETECTION (on raw listing_text)
+    # scam_result_raw = checkIfListingIsValid(listing_text)
+    # if  scam_result_raw == "YES":
+    #     return "Listing Has a problem initate the sequencing for the folder."
 
-    if scam_response.upper() == "YES":
-        print("❗ Scam listing detected. Skipping extraction and insertion.")
-        return
-
-    # ✅ Step 2: Extract listing details
-    chat_prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt_template),
-        ("human", human_prompt_template)
-    ])
-    chain = chat_prompt | llm
-    response = chain.invoke({"listing": listing_text})
-    raw_text = response.content.strip() if hasattr(response, "content") else response['text'].strip()
-
-    if raw_text.startswith("```json"):
-        raw_text = raw_text[7:]
-    if raw_text.endswith("```"):
-        raw_text = raw_text[:-3]
+    listing_instance=parseHouseListing(listing)
 
     try:
-        extracted_data = json.loads(raw_text)
-        parsed_listing = Listing(**extracted_data)
-        listing_dict = parsed_listing.model_dump()
-
-        #  Step 3: Connect to MongoDB
         mongo_client = MongoDBClient()
         collection = mongo_client.database["listings"]
-
-        #  Step 4: Check for duplicates
-        duplicate_checker = CatchDuplicateListings()
-        existing_listings = list(collection.find({
-            "contact.phone_numbers": {"$in": listing_dict["contact"]["phone_numbers"]}
-        }))
-
-        is_duplicate, _ = duplicate_checker.is_similar_listing(listing_dict, existing_listings)
-
-        listing_dict["is_duplicate"] = True if is_duplicate else False
-
-        #  Step 5: Store the listing
-        result = collection.insert_one(listing_dict)
-        print(json.dumps(listing_dict, indent=4, default=convert_objectid))
-        print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")
+        duplicateListingQuery= CatchDuplicateListings.getDuplicateListingQuery(listing_instance)
+        existing = collection.find_one(duplicateListingQuery)
+        if existing:
+            raise Exception("Listing Already Exisitis.")
+            print(" Listing exisits. Send message back to the user with the response.")
+            return "Listing exisits. Send message back to the user with the response."
+        else:
+            inserted=collection.insert_one(listing_instance)
+            return "Listing has been saved Here is your ID of the Listing. You can come back and edit your Listings"
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
-        print(f"Raw LLM response: {response}")
-extractDetails()
+        print(f"Raw LLM response:")
+
+def extractDetailsV2():
+    return None
+    #
+    # try:
+    #     extracted_data = json.loads(raw_text)
+    #     parsed_listing = Listing(**extracted_data)
+    #     listing_dict = parsed_listing.model_dump()
+    #
+    #     mongo_client = MongoDBClient()  # Will auto use DATABASE_NAME from .env
+    #     collection = mongo_client.database["listings"]
+    #
+    #     duplicate_checker = CatchDuplicateListings()
+    #
+    #     existing_listings = list(collection.find({
+    #         "contact.phone_numbers": {"$in": listing_dict["contact"]["phone_numbers"]}
+    #     }))
+    #
+    #     is_duplicate, matched_listing = duplicate_checker.is_similar_listing(listing_dict, existing_listings)
+    #
+    #     if is_duplicate:
+    #         print("⚠️ Similar listing already exists:")
+    #         print(json.dumps(matched_listing, indent=4, default=convert_objectid))
+    #         print("\n❗Skipping insertion.")
+    #         return
+    #
+    #     # ✅ Save the listing and print confirmation
+    #     result = collection.insert_one(listing_dict)
+    #     print(json.dumps(listing_dict, indent=4, default=convert_objectid))  # Only print non-duplicate
+    #     print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")
+    #
+    # except json.JSONDecodeError as e:
+    #     print(f"Error decoding JSON: {e}")
+    #     print(f"Raw LLM response: {response}")

@@ -36,3 +36,5 @@ class MongoDBClient:
 
         except Exception as e:
             raise Exception(e, sys)
+
+

@@ -1,3 +1,6 @@
+from listingParser.models.ListingInfo import Listing
+
+
 class CatchDuplicateListings:
     def __init__(self):
         pass  # In case you add instance-level data later
@@ -5,6 +8,17 @@ class CatchDuplicateListings:
     def normalize(self, text):
         """Converts text to lowercase and removes extra whitespace"""
         return text.strip().lower()
+
+    def getDuplicateListingQuery(self,new_listing:Listing):
+        query = {
+            "location.address": new_listing["location"]["address"],
+            "location.city": new_listing["location"]["city"],
+            "location.state": new_listing["location"]["state"],
+            "location.zip_code": new_listing["location"]["zip_code"]
+        }
+
+        return query
+
 
     def calculate_similarity_score(self, new, existing):
         score = 0
