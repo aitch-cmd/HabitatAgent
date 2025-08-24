@@ -9,7 +9,7 @@ load_dotenv()
 from Prompts import *
 from langchain.chains import LLMChain
 from models.ListingInfo import Listing
-from MongoDB import MongoDBClient
+from MongoDB.connection import MongoDBClient
 from duplicates import CatchDuplicateListings
 from bson import ObjectId
 
@@ -84,25 +84,21 @@ def extractDetails():
         parsed_listing = Listing(**extracted_data)
         listing_dict = parsed_listing.model_dump()
 
-        # ✅ Step 3: Connect to MongoDB
+        #  Step 3: Connect to MongoDB
         mongo_client = MongoDBClient()
         collection = mongo_client.database["listings"]
 
-        # 🔍 Step 4: Check for duplicates
+        #  Step 4: Check for duplicates
         duplicate_checker = CatchDuplicateListings()
         existing_listings = list(collection.find({
             "contact.phone_numbers": {"$in": listing_dict["contact"]["phone_numbers"]}
         }))
 
-        is_duplicate, matched_listing = duplicate_checker.is_similar_listing(listing_dict, existing_listings)
+        is_duplicate, _ = duplicate_checker.is_similar_listing(listing_dict, existing_listings)
 
-        if is_duplicate:
-            print("⚠️ Similar listing already exists:")
-            print(json.dumps(matched_listing, indent=4, default=convert_objectid))
-            print("\n❗Skipping insertion.")
-            return
+        listing_dict["is_duplicate"] = True if is_duplicate else False
 
-        # 💾 Step 5: Store the listing
+        #  Step 5: Store the listing
         result = collection.insert_one(listing_dict)
         print(json.dumps(listing_dict, indent=4, default=convert_objectid))
         print(f"\n✅ Listing stored in MongoDB with ID: {result.inserted_id}")

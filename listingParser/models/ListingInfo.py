@@ -36,3 +36,4 @@ class Listing(BaseModel):
     amenities: List[str]
     preferences: str
     contact: ContactInfo
+    is_duplicate: bool = False
