@@ -1,14 +1,10 @@
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
+from pydantic import ValidationError
 from agents.Prompts import *
 from listingParser.models.ListingInfo import Listing
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    temperature=0.2,
-    google_api_key="AIzaSyCK33vqrJ9XZKmC6zgwEEgvld90HAfhuR8",
-)
+from LlmProviders.GoogleLangchain import llm
 
 
 def getPromptTemplate(listing_text:str, parser):
@@ -24,9 +20,18 @@ def getPromptTemplate(listing_text:str, parser):
 
 def parseHouseListing(listing_text:str)->Listing:
 
-    parser=PydanticOutputParser(pydantic_object=Listing)
-    formatted_prompt = getPromptTemplate(listing_text, parser)
-    response = llm.invoke(formatted_prompt)
-    print(response.content)
-    listing_instance = parser.parse(response.content)
-    return listing_instance
+
+    try:
+
+        parser=PydanticOutputParser(pydantic_object=Listing)
+        formatted_prompt = getPromptTemplate(listing_text, parser)
+        response = llm.invoke(formatted_prompt)
+        print(response.content)
+        listing_instance = parser.parse(response.content)
+        return listing_instance
+    except ValidationError as e:
+        print(f"Validation error: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None

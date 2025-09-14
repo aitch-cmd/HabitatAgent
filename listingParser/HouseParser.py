@@ -18,29 +18,20 @@ from models.ListingInfo import Listing
 from listingRetrieval.retrieval import convert_objectid
 
 listing_text = """
-*Permanent Accommodation available.”
+🏡 Full 1-Bedroom  Apartment for Rent – Not for Sharing
+Spacious 1-bedroom apartment available for rent starting September 1st Poplar St, Jersey City.
 
-Newly renovated apartment
-Available starting August 1st onwards 
-2 people ideally, max 3
+🛋️ Features:
+– Large living area
+– Separate dining space
+– 1bedroom unit (not for sharing)
+– Clean and quiet environment
+– Prime location with easy access to transportation and nearby stores
 
-Address -  Pierce Ave, Heights, Jersey City, NJ, 07307
-🏠 Apartment Details 🏠
-Garden level unit
-2 Bedrooms
-1 Bathroom
+📍 Location: Poplar St, Jersey City, NJ
+📅 Move-in Date: urgent
 
-Rent: $1750 (includes free Wi-Fi, heat, and water)
-
-Amenities include:
-Dishwasher and Laundry in the unit
-
-(NO-SMOKING)
-
-No Broker Fee. Security Deposit - 1.5 Month Rent.
-
-Please text if you have any questions: 
-6174705145
+🚫 Only serious inquiries will be considered.
 """
 
 
@@ -52,8 +43,8 @@ def extractDetails(listing:str):
     #     return "Listing Has a problem initate the sequencing for the folder."
 
     listing_instance=parseHouseListing(listing)
-    
-
+    if not listing_instance:
+        print(listing_instance)
     try:
         mongo_client = MongoDBClient()
         collection = mongo_client.database["listings"]
