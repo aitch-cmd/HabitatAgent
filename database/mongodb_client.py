@@ -21,7 +21,7 @@ class MongoDBClient:
 
     def __init__(self, database_name: str = DATABASE_NAME) -> None:
         try:
-            # If client hasn't been created yet, create it
+            # If client hasn't been created yet, create itcom
             if MongoDBClient.client is None:
                 if MONGODB_URL is None:
                     raise Exception("Environment variable 'MONGODB_URL' is not set.")

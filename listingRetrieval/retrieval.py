@@ -1,7 +1,7 @@
 import json
-from database.mongodb_client import MongoDBClient
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from database.mongodb_client import MongoDBClient
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-pro",

@@ -1,4 +1,4 @@
-from listingParser.models.ListingInfo import Listing
+from models.ListingInfo import Listing
 
 
 class CatchDuplicateListings:
@@ -11,14 +11,13 @@ class CatchDuplicateListings:
 
     def getDuplicateListingQuery(self,new_listing:Listing):
         query = {
-            "location.address": new_listing["location"]["address"],
-            "location.city": new_listing["location"]["city"],
-            "location.state": new_listing["location"]["state"],
-            "location.zip_code": new_listing["location"]["zip_code"]
+            "location.address": new_listing.location.address,
+            "location.city": new_listing.location.city,
+            "location.state": new_listing.location.state,
+            "location.zip_code": new_listing.location.zip_code,
         }
 
         return query
-
 
     def calculate_similarity_score(self, new, existing):
         score = 0

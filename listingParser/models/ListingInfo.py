@@ -50,6 +50,6 @@ class Listing(BaseModel):
     preferences: str
     contact: ContactInfo
     is_duplicate: bool = False
-    secondary_contacts: List[SecondaryContact]
-    extras: Dict[str, Any]
+    secondary_contacts: List[SecondaryContact] = Field(default_factory=list)
+    extras: Dict[str, Any] = Field(default_factory=dict)
     model_config = ConfigDict(extra="allow")

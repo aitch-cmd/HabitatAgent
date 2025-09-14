@@ -8,7 +8,8 @@ Follow these rules meticulously:
 - **Strictly adhere to the JSON schema provided below.** Do not deviate from it.
 - If a piece of information is not present in the listing, use `null` for that field. Do not make up information.
 - Use the best available information to fill in the fields.
-- The output MUST be a single, valid JSON object and nothing else. Do not include any introductory or concluding text.
+- The output MUST be a single, valid JSON object and nothing else. Do not include any introductory or concluding text. Do not start the JSON with ```json. It should only be RAW string.
+
 
 JSON Schema:
 {{
