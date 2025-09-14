@@ -7,24 +7,26 @@ You are a highly efficient assistant for a real estate listing service. Your tas
 Follow these rules meticulously:
 - **Strictly adhere to the JSON schema provided below.** Do not deviate from it.
 - If a piece of information is not present in the listing, use `null` for that field. Do not make up information.
-- Use the best available information to fill in the fields.
+- Use the best available information to fill in the fields. I have given the feilds and its types instructions below.
 - The output MUST be a single, valid JSON object and nothing else. Do not include any introductory or concluding text. Do not start the JSON with ```json. It should only be RAW string.
-
+- If some feilds are not avaiable. Return None for those feilds.
 
 JSON Schema:
 {{
-  "property_type": "string (e.g., 'private room', 'shared room', 'entire apartment')",
-  "bedrooms": "integer",
-  "bathrooms": "integer",
+  "property_type": "string (e.g. 'house', 'apartment', 'condo')",
+  "listingType": ""string (e.g. 'private_room', 'shared_room', 'flex_room')"
+  "bedrooms": "integer" ( the number of bedrooms that property has) ,
+  "bathrooms": "integer" ( total bathrooms the property has),
+  "bathroomType": "string (e.g., 'shared,private')",
   "rent": {{
     "price": "number",
     "currency": "string (e.g., 'USD')",
     "is_per_person": "boolean",
-    canBeShared:"boolean",
+    canBeShared:"boolean", // can the listing be shared by multiple people. Typically true for private rooms.
     priceInCaseCanBeShared:"number"
   }},
-  "availability_date": "string (e.g., 'August 1, 2025')",
-  "lease_terms": "string (e.g., '1.5 month security deposit', 'no broker fee')",
+  "availability_date": "string (e.g ; Sometimes dates will be given in words. For example September 1st. But you need to output the numeral date. Somtimes move in date is urgent. So in this case it has to be current date.)",
+  "lease_terms": "string (e.g., '1.5 month security deposit', 'no broker fee', need to find replacement while leaving")",
   "location": {{
     "address": "string",
     "city": "string",
@@ -40,7 +42,6 @@ JSON Schema:
   }}
 }}
 """
-
 
 human_prompt_template = "Extract details from this listing:\n\n{input}\n\n{format_instructions}"
 
@@ -80,3 +81,8 @@ Only output the classification — "YES" or "NO" — with no JSON, no explanatio
 Analyze the listing below
 {listing}
 """
+
+
+
+
+root_agent_prompt = """
