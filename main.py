@@ -3,21 +3,12 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-
-
-
-
+from LlmProviders.GoogleLangchain import llm
 
 
 # Load .env variables
 load_dotenv()
 
-# Initialize Gemini Pro
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    temperature=0.2,
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
-)
 parser = JsonOutputParser()
 
 # Prompt for extracting structured data from unstructured WhatsApp listings
