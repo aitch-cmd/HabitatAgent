@@ -65,3 +65,4 @@ class Listing(BaseModel):
     model_config = ConfigDict(extra="allow")
     inserted_on:date=date.today()
     listing_status: ListingStatus = ListingStatus.PENDING
+    raw_listing: str=None  # Store the original raw listing text

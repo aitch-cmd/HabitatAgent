@@ -39,16 +39,8 @@ def reply_sms():
     except Exception as ex:
         return Response(ex, mimetype='text/xml')
 
+
 @whatsapp_bp.route("/mock/capture_wa_message", methods=['POST'])
 def mock_sms():
-    data = request.get_json(silent=True)  # Try to parse JSON, but don’t error if fails
-    if data and isinstance(data, dict):
-        body = data.get("Body")
-    else:
-        # Fall back to form data
-        body = request.form.get("Body")
-
-    if not body:
-        return jsonify({"error": "Bad request: missing 'Body'"}), 400
-
-    return extractDetails(data["Body"])
+        twilioMessageNotification=parseMessage(request.data)
+        return jsonify({"status":"success","data":twilioMessageNotification.dict()})

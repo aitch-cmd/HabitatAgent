@@ -28,10 +28,10 @@ def parseHouseListing(listing_text:str)->Listing:
         response = llm.invoke(formatted_prompt)
         print(response.content)
         listing_instance = parser.parse(response.content)
+        listing_instance.raw_listing=listing_text
         return listing_instance
-    except ValidationError as e:
-        print(f"Validation error: {e}")
-        return None
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"Validation error: {e}")
+        messages = [err["msg"] for err in e.errors()]
+        print("Validation errors:", messages)
         return None
