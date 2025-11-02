@@ -1,6 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from agents.Prompts import *
+from agentsV1.Prompts import *
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-pro",

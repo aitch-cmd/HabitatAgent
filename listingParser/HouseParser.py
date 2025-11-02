@@ -12,8 +12,8 @@ load_dotenv()
 
 from listingParser.duplicates import CatchDuplicateListings
 from database.mongodb_client import MongoDBClient
-from agents.ListingParser import parseHouseListing
-from agents.scam_checker import checkIfListingIsValid
+from agentsV1.ListingParser import parseHouseListing
+from agentsV1.scam_checker import checkIfListingIsValid
 from models.ListingInfo import Listing
 from listingRetrieval.retrieval import convert_objectid
 

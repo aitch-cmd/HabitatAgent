@@ -2,7 +2,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import ValidationError
-from agents.Prompts import *
+from agentsV1.Prompts import *
 from listingParser.models.ListingInfo import Listing
 from LlmProviders.GoogleLangchain import llm
 
