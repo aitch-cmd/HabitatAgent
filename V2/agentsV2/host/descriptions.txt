@@ -1,0 +1,4 @@
+Property management orchestrator that routes requests to specialized agents: 
+1. Listing Agent (for property owners/realtors), 
+2. Search Agent (for students finding accommodations), and 
+3. Alert Agent (for setting up property notifications).
