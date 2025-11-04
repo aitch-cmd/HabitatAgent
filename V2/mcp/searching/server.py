@@ -1,16 +1,13 @@
 import asyncio
 from typing import Any
 from mcp.server.fastmcp import FastMCP
-
-# Import your existing working modules
-from scraping.message_parser import UserMessageParser
-from retrieval.mgdb_filter import MongoDBFilter
-from retrieval.primary_ranker import PrimaryHybridReranker
+from V2.mcp.searching.utilities.parser import UserMessageParser
+from V2.mcp.searching.utilities.mdb_filter import MongoDBFilter
+from V2.mcp.searching.utilities.reranker import HybridReranker
 import json
 
 # Initialize FastMCP server
 mcp = FastMCP("property-search")
-
 
 class PropertySearchPipeline:
     """
@@ -24,9 +21,9 @@ class PropertySearchPipeline:
         # Initialize all components using your existing code
         self.message_parser = UserMessageParser()
         self.mongo_filter = MongoDBFilter(collection_name="tulire_listings")
-        self.hybrid_reranker = PrimaryHybridReranker()
+        self.hybrid_reranker = HybridReranker()
         
-    def search(self, user_message: str, top_k: int = 10) -> list[dict]:
+    def search(self, user_message: str, top_k: int = 5) -> list[dict]:
         """
         Execute the full search pipeline.
         

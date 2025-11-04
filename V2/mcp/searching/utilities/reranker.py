@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer, util
 import logging
 import yaml
 
-class PrimaryHybridReranker:
+class HybridReranker:
     """For handling the listings if it is less than 5."""
 
     @staticmethod
@@ -123,7 +123,7 @@ if __name__ == "__main__":
          "amenities": {"appliances": [], "utilities_included": []}, "bedroom": 3, "bathroom": 2},
     ]
 
-    reranker = PrimaryHybridReranker()
+    reranker = HybridReranker()
     reranked = reranker.rerank(user_message, candidates)
 
     for r in reranked:
