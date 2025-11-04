@@ -1,0 +1,145 @@
+import os
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.output_parsers import StructuredOutputParser, ResponseSchema
+
+
+class UserMessageParser:
+    """
+    Parses user search queries into structured fields for property retrieval.
+    
+    Example:
+        Input: "Show me 2BHK flats in Bangalore under 20k"
+        Output: {
+            "location": "Bangalore",
+            "price": 20000,
+            "rag_content": "2BHK flats"
+        }
+    """
+    
+    def __init__(self, model_name: str = "gemini-2.0-flash-exp", temperature: float = 0.3):
+        """
+        Initialize the message parser with LLM and output schema.
+        
+        Args:
+            model_name: Google Gemini model to use (default: gemini-2.0-flash-exp for speed)
+            temperature: Creativity vs determinism (0.3 = more deterministic for extraction)
+        """
+        # Load Google API key from environment variables
+        load_dotenv()
+        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        
+        if not google_api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        
+        # Define the structure we want to extract from user messages
+        response_schemas = [
+            ResponseSchema(
+                name="location",
+                description="The city, area, or neighborhood mentioned (e.g., 'Bangalore', 'Koramangala')"
+            ),
+            ResponseSchema(
+                name="price",
+                description="Budget or max price as a number (e.g., 20000). Extract only the numeric value."
+            ),
+            ResponseSchema(
+                name="rag_content",
+                description=(
+                    "Additional search criteria: number of bedrooms (e.g., '2BHK', '3BHK'), "
+                    "furnishing (furnished/semi-furnished/unfurnished), property type (flat/apartment/villa), "
+                    "amenities (parking, gym, pool), and any other requirements"
+                )
+            )
+        ]
+        
+        # Create output parser that converts LLM response to structured dict
+        self.output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
+        
+        # Get format instructions to tell the LLM how to structure its output
+        self.format_instructions = self.output_parser.get_format_instructions()
+        
+        # Initialize Google Gemini LLM
+        self.llm = ChatGoogleGenerativeAI(
+            model=model_name,
+            temperature=temperature,
+            google_api_key=google_api_key
+        )
+        
+        # Create prompt template with clear extraction instructions
+        self.prompt = ChatPromptTemplate.from_template("""
+You are an expert at extracting property search criteria from natural language.
+
+Extract the following from the user's message:
+1. **location**: City, area, or neighborhood (if mentioned)
+2. **price**: Maximum budget as a number only (convert "20k" to 20000, "1.5L" to 150000)
+3. **rag_content**: All other requirements (bedrooms, furnishing, amenities, preferences)
+
+User message: {user_message}
+
+{format_instructions}
+
+Important:
+- If a field is not mentioned, set it to null or empty string
+- For price, extract only the numeric value
+- Be thorough in capturing all requirements in rag_content
+""")
+        
+        # Chain prompt → LLM → parser for streamlined execution
+        self.chain = self.prompt | self.llm | self.output_parser
+    
+    def extract(self, user_message: str) -> dict:
+        """
+        Extract structured property search criteria from user message.
+        
+        Args:
+            user_message: Natural language search query from user
+            
+        Returns:
+            dict: Structured data with keys: location, price, rag_content
+            
+        Example:
+            >>> parser = UserMessageParser()
+            >>> parser.extract("2BHK furnished flat in Koramangala under 25k")
+            {
+                "location": "Koramangala",
+                "price": 25000,
+                "rag_content": "2BHK furnished flat"
+            }
+        """
+        try:
+            # Invoke the LangChain pipeline
+            result = self.chain.invoke({
+                "user_message": user_message,
+                "format_instructions": self.format_instructions
+            })
+            return result
+        
+        except Exception as e:
+            # If parsing fails, return a fallback structure
+            print(f"Error parsing message: {e}")
+            return {
+                "location": "",
+                "price": None,
+                "rag_content": user_message  # Fallback: use entire message
+            }
+
+
+# Test the parser when run directly
+if __name__ == "__main__":
+    # Initialize parser
+    extractor = UserMessageParser()
+    
+    # Test cases
+    test_messages = [
+        "Show me 2BHK flats in Bangalore under 20k",
+        "3BHK furnished apartment in Koramangala with parking, budget 50000",
+        "Find me a villa in Whitefield",
+        "Studio apartment near MG Road under 15k"
+    ]
+    
+    print("Testing UserMessageParser:\n")
+    for msg in test_messages:
+        print(f"Input: {msg}")
+        result = extractor.extract(msg)
+        print(f"Output: {result}\n")
