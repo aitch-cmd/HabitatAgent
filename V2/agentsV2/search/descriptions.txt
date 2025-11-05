@@ -1,0 +1,1 @@
+Finds rental properties for students based on natural language queries with filters for location, price, bedrooms, and amenities.

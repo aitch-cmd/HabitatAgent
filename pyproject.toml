@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "a2a-sdk>=0.3.10",
     "fastmcp>=2.13.0.2",
     "langchain>=1.0.3",
+    "mcp[cli]>=1.20.0",
     "pymongo>=4.15.3",
 ]
