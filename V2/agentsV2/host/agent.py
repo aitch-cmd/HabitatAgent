@@ -33,13 +33,13 @@ class HostAgent:
     """
 
     def __init__(self):
-        self.system_instruction= load_instructions_file("agents/host_agent/instructions.txt")
-        self.description=load_instructions_file("agents/host_agent/descriptions.txt")
-        self.MCPConnector=MCPConnector()
-        self.AgentDiscovery=AgentDiscovery()
-        self._agent=None
-        self._user_id="host_agent_user"
-        self._runner=None
+        self.system_instruction = load_instructions_file("agents/host_agent/instructions.txt")
+        self.description = load_instructions_file("agents/host_agent/descriptions.txt")
+        self.MCPConnector = MCPConnector()
+        self.AgentDiscovery = AgentDiscovery()
+        self._agent = None
+        self._user_id = "host_agent_user"
+        self._runner = None
 
     async def create(self):
         self._agent = await self._build_agent()
@@ -64,13 +64,23 @@ class HostAgent:
         return [card.model_dump(exclude_none=True) for card in cards]
 
     async def _delgate_task(self, agent_name: str, message: str) -> str:
+        """
+        Delegate a task to a child agent by name or ID
+        
+        Args:
+            agent_name: Name or ID of the agent to delegate to
+            message: Message/task to send to the agent
+            
+        Returns:
+            str: Response from the child agent
+        """
         cards = await self.AgentDiscovery.list_agents_cards()
 
         matched_card = None
         for card in cards:
             if card.name.lower() == agent_name.lower():
                 matched_card = card
-            elif getattr(card, "id","").lower() == agent_name.lower():
+            elif getattr(card, "id", "").lower() == agent_name.lower():
                 matched_card = card
         
         if matched_card is None:
@@ -83,18 +93,20 @@ class HostAgent:
                 
     
     async def _build_agent(self) -> LlmAgent:
-        mcp_tools = self.MCPConnector.get_tools()
-
+        """
+        Build the LLM agent with MCP property search tools.
+        
+        Returns:
+            LlmAgent: Configured Gemini agent with property search capabilities
+        """
+        mcp_tools = await self.MCPConnector.get_tools()
+        
         return LlmAgent(
-            name="host_agent",
-            model="gemini-2.5-flash",
+            name="search_agent",
+            model="gemini-2.0-flash-exp",
             instruction=self.system_instruction,
             description=self.description,
-            tools=[
-                FunctionTool(self._delgate_task),
-                FunctionTool(self._list_agents),
-                *mcp_tools
-            ]
+            tools=mcp_tools  
         )
     
     async def invoke(self, query: str, session_id: str) -> AsyncIterable[dict]:
@@ -102,16 +114,21 @@ class HostAgent:
         Invoke the agent
         Return a stream of updates back to the caller as the agent processes the query
 
-        {
-            'is_task_complete': bool,  # Indicates if the task is complete
-            'updates': str,  # Updates on the task progress
-            'content': str  # Final result of the task if complete
-        }
+        Yields:
+            dict: Stream of updates with structure:
+                {
+                    'is_task_complete': bool,  # Indicates if the task is complete
+                    'updates': str,  # Updates on the task progress
+                    'content': str  # Final result of the task if complete
+                }
         
+        Args:
+            query: User query to process
+            session_id: Session identifier for conversation continuity
         """
 
         if not self._runner:
-            raise ValueError("Runner is not initialized")
+            raise ValueError("Runner is not initialized. Call create() first.")
     
         session = await self._runner.session_service.get_session(
             app_name=self._agent.name,
@@ -128,7 +145,7 @@ class HostAgent:
         
         user_content = types.Content(
             role="user",
-            parts = [types.Part.from_text(text=query)]
+            parts=[types.Part.from_text(text=query)]
         )
 
         async for event in self._runner.run_async(
@@ -156,8 +173,15 @@ class HostAgent:
                     'updates': "Agent is processing your request..."
                 }
 
+
 def print_json_response(response: Any, title: str) -> None:
-    # Displays a formatted and color-highlighted view of the response
+    """
+    Displays a formatted and color-highlighted view of the response
+    
+    Args:
+        response: Response object to display
+        title: Section title for the output
+    """
     print(f"\n=== {title} ===")  # Section title for clarity
     try:
         if hasattr(response, "root"):  # Check if response is wrapped by SDK
@@ -172,4 +196,3 @@ def print_json_response(response: Any, title: str) -> None:
         # Print fallback text if something fails
         rprint(f"[red bold]Error printing JSON:[/red bold] {e}")
         rprint(repr(response))
-
