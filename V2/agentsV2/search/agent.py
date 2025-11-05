@@ -2,7 +2,7 @@ from collections.abc import AsyncIterable
 import json
 from typing import Any
 
-from utilities.common.file_loader import load_instructions_file
+from V2.utilities.common.file_loader import load_instructions_file
 from google.adk.agents import LlmAgent
 from google.adk import Runner
 
@@ -14,7 +14,7 @@ from google.genai import types
 from rich import print as rprint
 from rich.syntax import Syntax
 
-from utilities.mcp.mcp_connect import MCPConnector
+from V2.utilities.mcp.mcp_connect import MCPConnector
 
 from dotenv import load_dotenv
 load_dotenv()

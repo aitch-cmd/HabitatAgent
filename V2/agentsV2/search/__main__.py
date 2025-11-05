@@ -6,7 +6,7 @@ Helps students find rental accommodations using natural language queries.
 from a2a.types import AgentSkill, AgentCard, AgentCapabilities
 import click
 from a2a.server.request_handlers import DefaultRequestHandler
-from agents.search_agent.agent_executor import SearchAgentExecutor 
+from V2.agentsV2.search.agent_executor import SearchAgentExecutor 
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.apps import A2AStarletteApplication
 import uvicorn

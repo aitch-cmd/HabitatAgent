@@ -1,4 +1,4 @@
-from utilities.mcp.mcp_connect import MCPConnector
+from V2.utilities.mcp.mcp_connect import MCPConnector
 from typing import Optional, Dict, Any
 import json
 

@@ -21,8 +21,8 @@ from a2a.types import (
     UnsupportedOperationError
 )
 
-from utilities.mcp.mcp_helpers import MCPHelpers
-from utilities.mcp.mcp_connect import MCPConnector
+from V2.utilities.mcp.mcp_helpers import MCPHelpers
+from V2.utilities.mcp.mcp_connect import MCPConnector
 
 import asyncio
 import json
