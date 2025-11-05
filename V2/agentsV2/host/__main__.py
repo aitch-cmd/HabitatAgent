@@ -1,7 +1,7 @@
 from a2a.types import AgentSkill, AgentCard, AgentCapabilities
 import click
 from a2a.server.request_handlers import DefaultRequestHandler
-from agents.host_agent.agent_executor import HostAgentExecutor 
+from V2.agentsV2.host.agent_executor import HostAgentExecutor 
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.apps import A2AStarletteApplication
 import uvicorn

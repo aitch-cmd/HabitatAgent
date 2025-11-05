@@ -6,8 +6,7 @@ from typing import List, Dict, Any
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from rich import print
-
-from utilities.mcp.mcp_discovery import MCPDiscovery
+from V2.utilities.mcp.mcp_discovery import MCPDiscovery
 
 logging.getLogger("mcp").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
