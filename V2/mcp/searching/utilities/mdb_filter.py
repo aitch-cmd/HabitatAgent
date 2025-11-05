@@ -1,6 +1,6 @@
 import sys
-from db.connection import MongoDBClient
-from scraping.message_parser import UserMessageParser
+from V2.db.connection import MongoDBClient
+from V2.mcp.searching.utilities.parser import UserMessageParser
 from pymongo.errors import OperationFailure
 
 class MongoDBFilter:

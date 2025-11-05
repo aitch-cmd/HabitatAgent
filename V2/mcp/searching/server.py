@@ -241,4 +241,4 @@ def check_search_status() -> str:
 
 # Run the MCP server
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http")
