@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "property_search": {
+            "command": "streamable_http",
+            "args":[
+            "http://localhost:9000/mcp/"
+          ]
+        }
+    }
+}

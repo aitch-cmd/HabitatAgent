@@ -6,8 +6,12 @@ from V2.mcp.searching.utilities.mdb_filter import MongoDBFilter
 from V2.mcp.searching.utilities.reranker import HybridReranker
 import json
 
-# Initialize FastMCP server
-mcp = FastMCP("property-search")
+mcp=FastMCP(
+    "property_search",
+    host="localhost",
+    port=9000,
+    stateless_http=True
+)
 
 class PropertySearchPipeline:
     """
