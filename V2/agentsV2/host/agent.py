@@ -17,8 +17,6 @@ from google.genai import types
 from rich import print as rprint
 from rich.syntax import Syntax
 
-from V2.utilities.mcp.mcp_connect import MCPConnector
-
 from a2a.types import AgentCard
 
 from dotenv import load_dotenv
@@ -28,14 +26,12 @@ class HostAgent:
     """
     Orchestrator Agent
     - Discovers A2A agents via agent discovery
-    - Discover the MCP servers via MCP connectors and load the MCP tools
-    - Routes the user query by picking the correct agent/tool
+    - Routes the user query by picking the correct agent
     """
 
     def __init__(self):
         self.system_instruction = load_instructions_file("agents/host_agent/instructions.txt")
         self.description = load_instructions_file("agents/host_agent/descriptions.txt")
-        self.MCPConnector = MCPConnector()
         self.AgentDiscovery = AgentDiscovery()
         self._agent = None
         self._user_id = "host_agent_user"
@@ -63,7 +59,7 @@ class HostAgent:
 
         return [card.model_dump(exclude_none=True) for card in cards]
 
-    async def _delgate_task(self, agent_name: str, message: str) -> str:
+    async def _delegate_task(self, agent_name: str, message: str) -> str:
         """
         Delegate a task to a child agent by name or ID
         
@@ -75,38 +71,49 @@ class HostAgent:
             str: Response from the child agent
         """
         cards = await self.AgentDiscovery.list_agents_cards()
+        
+        print(f"🔍 Looking for agent: {agent_name}")
+        print(f"📋 Available agents: {[card.name for card in cards]}")
 
         matched_card = None
         for card in cards:
             if card.name.lower() == agent_name.lower():
                 matched_card = card
+                break
             elif getattr(card, "id", "").lower() == agent_name.lower():
                 matched_card = card
+                break
         
         if matched_card is None:
-            return "Agent not found"
+            available = [c.name for c in cards]
+            return f"❌ Agent '{agent_name}' not found. Available agents: {available}"
         
+        print(f"✅ Delegating to {matched_card.name}")
         connector = AgentConnector(agent_card=matched_card)
 
-        return await connector.send_task(message=message, session_id=str(uuid4()))
-
-                
+        try:
+            response = await connector.send_task(message=message, session_id=str(uuid4()))
+            return response
+        except Exception as e:
+            return f"❌ Error delegating to {agent_name}: {str(e)}"
     
     async def _build_agent(self) -> LlmAgent:
         """
-        Build the LLM agent with MCP property search tools.
+        Build the host agent with delegation tools only.
+        The host agent routes requests to specialized child agents.
         
         Returns:
-            LlmAgent: Configured Gemini agent with property search capabilities
+            LlmAgent: Configured host agent with delegation capabilities
         """
-        mcp_tools = await self.MCPConnector.get_tools()
-        
         return LlmAgent(
-            name="search_agent",
-            model="gemini-2.0-flash-exp",
+            name="host_agent",  
+            model="gemini-2.5-flash",
             instruction=self.system_instruction,
             description=self.description,
-            tools=mcp_tools  
+            tools=[  
+                FunctionTool(self._delegate_task),
+                FunctionTool(self._list_agents),
+            ]
         )
     
     async def invoke(self, query: str, session_id: str) -> AsyncIterable[dict]:
@@ -153,7 +160,7 @@ class HostAgent:
             session_id=session_id,
             new_message=user_content
         ):
-            print_json_response(event, "================ NEW EVENT ================")
+            print_json_response(event, "================ HOST AGENT EVENT ================")
             
             print(f"is_final_response: {event.is_final_response()}")    
             
@@ -170,7 +177,7 @@ class HostAgent:
             else:
                 yield {
                     'is_task_complete': False,
-                    'updates': "Agent is processing your request..."
+                    'updates': "Host agent is routing your request..."
                 }
 
 

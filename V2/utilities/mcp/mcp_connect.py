@@ -24,6 +24,7 @@ class MCPConnector:
         self.discovery = MCPDiscovery(config_file=config_file)
         self.sessions: Dict[str, ClientSession] = {}
         self.tools_cache: Dict[str, List[Dict[str, Any]]] = {}
+        self._exit_stack = None 
         
     async def _load_all_tools(self):
         """
@@ -31,15 +32,21 @@ class MCPConnector:
         that support streamable_http connections 
         and caches them as ClientSessions.
         """
+        from contextlib import AsyncExitStack
+        
+        # Keep connections alive
+        self._exit_stack = AsyncExitStack()
 
         for name, server in self.discovery.list_servers().items():
             try:
                 if server.get("command") == "streamable_http":
                     url = server["args"][0]
-                    read, write = await sse_client(url)
+                    
+                    read, write = await self._exit_stack.enter_async_context(
+                        sse_client(url)
+                    )
                     session = ClientSession(read, write)
 
-                    # Initialize session with timeout
                     await asyncio.wait_for(session.initialize(), timeout=10.0)
 
                     # List available tools
