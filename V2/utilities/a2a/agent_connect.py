@@ -26,10 +26,10 @@ class AgentConnector:
             session_id (str): The session ID for tracking the task
 
         Returns:
-            Task: The Task object containing the response from the agent
+            str: The response text from the agent
         """
-
-        async with httpx.AsyncClient(timeout = 300.0) as httpx_client:
+        # Increase timeout to 600 seconds (10 minutes) for long-running operations
+        async with httpx.AsyncClient(timeout=600.0) as httpx_client:  # Changed from 300.0
             a2a_client = A2AClient(
                 httpx_client=httpx_client,
                 agent_card=self.agent_card,
@@ -55,15 +55,25 @@ class AgentConnector:
                 )
             )
 
-            response = await a2a_client.send_message(
-                request=request
-            )
-
-            response_data = response.model_dump(mode='json', exclude_none=True)
-
             try:
-                agent_response = response_data['result']['status']['message']['parts'][0]['text']
-            except (KeyError, IndexError):
-                agent_response = "No response from agent"
+                print(f"📤 Sending message to {self.agent_card.name}...")
+                response = await a2a_client.send_message(request=request)
+                print(f"✅ Received response from {self.agent_card.name}")
 
-            return agent_response
+                response_data = response.model_dump(mode='json', exclude_none=True)
+
+                try:
+                    agent_response = response_data['result']['status']['message']['parts'][0]['text']
+                except (KeyError, IndexError):
+                    agent_response = "No response from agent"
+
+                return agent_response
+                
+            except httpx.TimeoutException as e:
+                error_msg = f"⏱️ Timeout: {self.agent_card.name} took too long to respond. Please try again."
+                print(f"❌ {error_msg}")
+                return error_msg
+            except Exception as e:
+                error_msg = f"Error communicating with {self.agent_card.name}: {str(e)}"
+                print(f"❌ {error_msg}")
+                return error_msg

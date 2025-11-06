@@ -36,10 +36,10 @@ class SearchAgent:
         Initialize the search agent with instructions and MCP connector.
         """
         # Load the agent's system instructions (how to behave)
-        self.system_instruction = load_instructions_file("agents/search_agent/instructions.txt")
+        self.system_instruction = load_instructions_file("V2/agentsV2/search/instructions.txt")
         
         # Load the agent's description (what it does)
-        self.description = load_instructions_file("agents/search_agent/description.txt")
+        self.description = load_instructions_file("V2/agentsV2/search/descriptions.txt")
         
         # Initialize MCP connector to access property search tool
         self.MCPConnector = MCPConnector()

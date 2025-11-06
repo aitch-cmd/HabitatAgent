@@ -43,41 +43,133 @@ class SearchAgentExecutor(AgentExecutor):
     """
 
     def __init__(self):
-        # Create an instance of our search agent
         self.agent = SearchAgent()
-        
-        # MCP connector for calling property search tools
         self.mcp_connector: MCPConnector = None
-        
-        # Flag to track if the agent has been fully initialized
         self._initialized = False
 
-    async def _initialize_mcp(self, updater: TaskUpdater, context_id: str, task_id: str):
+    async def _initialize_mcp(self):
         """
-        Initialize MCP connector and load property search tools.
-        
-        Args:
-            updater: TaskUpdater for sending status messages
-            context_id: Context ID for the task
-            task_id: Task ID for the task
+        Initialize MCP connector once at startup (not per request).
         """
         if not self.mcp_connector:
-            await updater.update_status(
-                TaskState.working,
-                new_agent_text_message("🔧 Initializing property search services...", context_id, task_id)
-            )
+            print("🔧 Initializing MCP property search services...")
             
-            # Get path to MCP config file
             config_path = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                 'utilities', 'mcp', 'mcp_config.json'
             )
             
-            # Initialize MCP connector
             self.mcp_connector = MCPConnector(config_file=config_path)
             await self.mcp_connector.get_tools()
             
-            print("✅ MCP property search tools loaded")
+            print("✅ MCP property search tools loaded and ready")
+
+    async def create(self):
+        """
+        Factory method to initialize the SearchAgentExecutor.
+        Now also initializes MCP at startup.
+        """
+        print("🚀 Initializing Search Agent...")
+        await self.agent.create()
+        await self._initialize_mcp()  # Initialize MCP at startup
+        self._initialized = True
+        print("✅ Search Agent fully initialized and ready")
+
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
+        """
+        Executes the search agent with the provided context and event queue.
+        
+        This is the main entry point called by the A2A framework when a 
+        search request arrives.
+        
+        Args:
+            context: Contains the user's search query and request metadata
+            event_queue: Channel for sending status updates back to the caller
+        """
+        
+        # Ensure the agent is initialized before processing requests
+        if not self._initialized:
+            await self.create()
+        
+        # Extract the user's actual search query from the request context
+        query = context.get_user_input()
+        
+        # Get the current task from context (may be None if this is a new request)
+        task = context.current_task
+        
+        # If no existing task, create a new one and send it to the event queue
+        if not task:
+            task = new_task(context.message)
+            await event_queue.enqueue_event(task)
+        
+        # Get task identifiers
+        task_id = task.id
+        context_id = task.context_id
+        
+        # Create a TaskUpdater helper to easily send status updates for this task
+        updater = TaskUpdater(event_queue, task_id, context_id)
+        
+        try:
+            # Step 1: Analyze requirements
+            await updater.update_status(
+                TaskState.working,
+                new_agent_text_message("🏠 Analyzing your requirements...", context_id, task_id)
+            )
+            
+            # Step 2: Search properties using MCP tool
+            search_result = await self._search_properties_via_mcp(
+                user_query=query,
+                max_results=10,
+                updater=updater,
+                context_id=context_id,
+                task_id=task_id
+            )
+            
+            # Step 3: Check search status
+            if search_result.get("status") == "error":
+                error_msg = search_result.get("message", "Unknown error occurred")
+                await updater.update_status(
+                    TaskState.failed,
+                    new_agent_text_message(f"❌ {error_msg}", context_id, task_id)
+                )
+                return
+            
+            # Step 4: Format results for user
+            await updater.update_status(
+                TaskState.working,
+                new_agent_text_message("📊 Formatting results...", context_id, task_id)
+            )
+            
+            formatted_output = await self._format_search_results(search_result)
+            
+            # Step 5: Send final results
+            print(f"✅ Search completed: Found {search_result.get('count', 0)} properties")
+            
+            await updater.update_status(
+                TaskState.completed,
+                new_agent_text_message(formatted_output, context_id, task_id)
+            )
+            
+            # Small delay to ensure the completion message is processed
+            await asyncio.sleep(0.1)
+                    
+        except Exception as e:
+            # Something went wrong during search execution
+            error_msg = f"Search failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            
+            # Send "failed" status with error details
+            await updater.update_status(
+                TaskState.failed,
+                new_agent_text_message(
+                    f"❌ {error_msg}\nPlease try refining your search criteria.",
+                    context_id,
+                    task_id
+                )
+            )
+            
+            # Re-raise the exception so it can be logged/handled by the framework
+            raise
 
     async def _search_properties_via_mcp(
         self, 
@@ -88,17 +180,7 @@ class SearchAgentExecutor(AgentExecutor):
         task_id: str
     ) -> dict:
         """
-        Search for properties using MCP property search tool.
-        
-        Args:
-            user_query: Natural language search query from user
-            max_results: Maximum number of results to return
-            updater: TaskUpdater for sending status messages
-            context_id: Context ID for the task
-            task_id: Task ID for the task
-            
-        Returns:
-            dict: Search results with status, count, and properties list
+        Search for properties using already-initialized MCP connector.
         """
         try:
             await updater.update_status(
@@ -110,11 +192,10 @@ class SearchAgentExecutor(AgentExecutor):
                 )
             )
             
-            # Call the MCP property search tool using MCPHelpers
             result = await MCPHelpers.call_tool(
                 self.mcp_connector,
-                "property-search",  # MCP server name from mcp_config.json
-                "search_properties",  # Tool name
+                "property_search",
+                "search_properties",
                 {
                     "user_query": user_query,
                     "max_results": max_results
@@ -132,7 +213,7 @@ class SearchAgentExecutor(AgentExecutor):
                 "count": 0,
                 "results": []
             }
-
+        
     async def _format_search_results(self, search_result: dict) -> str:
         """
         Format search results into a human-readable message.
@@ -202,123 +283,11 @@ class SearchAgentExecutor(AgentExecutor):
         
         return output
 
-    async def create(self):
-        """
-        Factory method to asynchronously initialize the SearchAgentExecutor.
-        
-        This is called separately from __init__ because agent initialization
-        involves async operations (connecting to MCP servers, loading tools).
-        """
-        # Initialize the search agent
-        await self.agent.create()
-        
-        # Mark as initialized so we don't repeat this process
-        self._initialized = True
-
-    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
-        """
-        Executes the search agent with the provided context and event queue.
-        
-        This is the main entry point called by the A2A framework when a 
-        search request arrives.
-        
-        Args:
-            context: Contains the user's search query and request metadata
-            event_queue: Channel for sending status updates back to the caller
-        """
-        
-        # Ensure the agent is initialized before processing requests
-        if not self._initialized:
-            await self.create()
-        
-        # Extract the user's actual search query from the request context
-        query = context.get_user_input()
-        
-        # Get the current task from context (may be None if this is a new request)
-        task = context.current_task
-        
-        # If no existing task, create a new one and send it to the event queue
-        if not task:
-            task = new_task(context.message)  # Create Task object from message
-            await event_queue.enqueue_event(task)  # Notify caller that task was created
-        
-        # Get task identifiers
-        task_id = task.id
-        context_id = task.context_id
-        
-        # Create a TaskUpdater helper to easily send status updates for this task
-        updater = TaskUpdater(event_queue, task_id, context_id)
-        
-        try:
-            # Step 1: Initialize MCP connector (only once)
-            await self._initialize_mcp(updater, context_id, task_id)
-            
-            # Step 2: Search properties using MCP tool
-            await updater.update_status(
-                TaskState.working,
-                new_agent_text_message("🏠 Analyzing your requirements...", context_id, task_id)
-            )
-            
-            search_result = await self._search_properties_via_mcp(
-                user_query=query,
-                max_results=10,
-                updater=updater,
-                context_id=context_id,
-                task_id=task_id
-            )
-            
-            # Step 3: Check search status
-            if search_result.get("status") == "error":
-                error_msg = search_result.get("message", "Unknown error occurred")
-                await updater.update_status(
-                    TaskState.failed,
-                    new_agent_text_message(f"❌ {error_msg}", context_id, task_id)
-                )
-                return
-            
-            # Step 4: Format results for user
-            await updater.update_status(
-                TaskState.working,
-                new_agent_text_message("📊 Formatting results...", context_id, task_id)
-            )
-            
-            formatted_output = await self._format_search_results(search_result)
-            
-            # Step 5: Send final results
-            print(f"✅ Search completed: Found {search_result.get('count', 0)} properties")
-            
-            await updater.update_status(
-                TaskState.completed,
-                new_agent_text_message(formatted_output, context_id, task_id)
-            )
-            
-            # Small delay to ensure the completion message is processed
-            await asyncio.sleep(0.1)
-                    
-        except Exception as e:
-            # Something went wrong during search execution
-            error_msg = f"Search failed: {str(e)}"
-            print(f"❌ {error_msg}")
-            
-            # Send "failed" status with error details
-            await updater.update_status(
-                TaskState.failed,
-                new_agent_text_message(
-                    f"❌ {error_msg}\nPlease try refining your search criteria.",
-                    context_id,
-                    task_id
-                )
-            )
-            
-            # Re-raise the exception so it can be logged/handled by the framework
-            raise
-
     async def cancel(self, request: RequestContext, event_queue: EventQueue) -> Task | None:
         """
         Handles task cancellation requests.
         
         Currently not implemented - raises an error if someone tries to cancel.
-        Search operations are typically fast enough that cancellation isn't needed.
         
         Args:
             request: The cancellation request context
@@ -327,5 +296,4 @@ class SearchAgentExecutor(AgentExecutor):
         Raises:
             ServerError: Always, because cancellation is not supported
         """
-        # Raise an error indicating that cancellation is not supported
         raise ServerError(error=UnsupportedOperationError())

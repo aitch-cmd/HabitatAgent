@@ -31,6 +31,8 @@ class MCPConnector:
         Loads all tools from the discovered MCP servers 
         that support streamable_http connections 
         and caches them as ClientSessions.
+        
+        Now handles connection failures gracefully - continues even if servers are unavailable.
         """
         from contextlib import AsyncExitStack
         
@@ -42,12 +44,21 @@ class MCPConnector:
                 if server.get("command") == "streamable_http":
                     url = server["args"][0]
                     
-                    read, write = await self._exit_stack.enter_async_context(
-                        sse_client(url)
-                    )
+                    print(f"[cyan]Attempting to connect to MCP server '{name}' at {url}...[/cyan]")
+                    
+                    # Add timeout to prevent hanging
+                    try:
+                        read, write = await asyncio.wait_for(
+                            self._exit_stack.enter_async_context(sse_client(url)),
+                            timeout=5.0  # 5 second timeout for connection
+                        )
+                    except asyncio.TimeoutError:
+                        print(f"[yellow]⚠️  Timeout connecting to MCP server '{name}' (skipping)[/yellow]")
+                        continue
+                    
                     session = ClientSession(read, write)
 
-                    await asyncio.wait_for(session.initialize(), timeout=10.0)
+                    await asyncio.wait_for(session.initialize(), timeout=5.0)
 
                     # List available tools
                     tools_response = await session.list_tools()
@@ -65,14 +76,22 @@ class MCPConnector:
                         ]
 
                         tool_names = [tool.name for tool in tools]
-                        print(f"[bold green]Loaded tools from server [cyan]'{name}'[/cyan]:[/bold green] {', '.join(tool_names)}")
+                        print(f"[bold green]✅ Loaded tools from server [cyan]'{name}'[/cyan]:[/bold green] {', '.join(tool_names)}")
+                    else:
+                        print(f"[yellow]⚠️  No tools found on server '{name}'[/yellow]")
 
             except asyncio.TimeoutError:
-                print(f"[bold red]Timeout loading tools from server '{name}' (skipping)[/bold red]")
+                print(f"[yellow]⚠️  Timeout loading tools from server '{name}' (skipping)[/yellow]")
             except ConnectionError as e:
-                print(f"[bold red]Connection error loading tools from server '{name}': {e} (skipping)[/bold red]")
+                print(f"[yellow]⚠️  Connection error loading tools from server '{name}': {e} (skipping)[/yellow]")
             except Exception as e:
-                print(f"[bold red]Error loading tools from server '{name}': {e} (skipping)[/bold red]")
+                print(f"[yellow]⚠️  Error loading tools from server '{name}': {e} (skipping)[/yellow]")
+        
+        # Print summary
+        if not self.tools_cache:
+            print(f"[bold yellow]⚠️  WARNING: No MCP tools loaded. Make sure MCP servers are running![/bold yellow]")
+        else:
+            print(f"[bold green]✅ Successfully loaded {len(self.tools_cache)} MCP server(s)[/bold green]")
 
     
     async def get_tools(self) -> Dict[str, List[Dict[str, Any]]]:

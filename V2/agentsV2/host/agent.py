@@ -30,8 +30,8 @@ class HostAgent:
     """
 
     def __init__(self):
-        self.system_instruction = load_instructions_file("agents/host_agent/instructions.txt")
-        self.description = load_instructions_file("agents/host_agent/descriptions.txt")
+        self.system_instruction = load_instructions_file("V2/agentsV2/host/instructions.txt")
+        self.description = load_instructions_file("V2/agentsV2/host/descriptions.txt")
         self.AgentDiscovery = AgentDiscovery()
         self._agent = None
         self._user_id = "host_agent_user"
