@@ -78,21 +78,15 @@ class SearchAgent:
             LlmAgent: Configured Gemini agent with property search capabilities
         """
         # Get MCP tools (property search server)
-        mcp_tools_dict = await self.MCPConnector.get_tools()
+        mcp_toolsets = await self.MCPConnector.get_tools()
 
-        all_tools = []
-        for server_name, tools_list in mcp_tools_dict.items():
-            if isinstance(tools_list, list):
-                all_tools.extend(tools_list)
-        
-        # Create the LLM agent with Gemini model
         return LlmAgent(
-            name="search_agent",
-            model="gemini-2.0-flash-exp",  # Fast model for quick search responses
-            instruction=self.system_instruction,
-            description=self.description,
-            tools=all_tools
-        )
+        name="search_agent",
+        model="gemini-2.0-flash-exp",  
+        instruction=self.system_instruction,
+        description=self.description,
+        tools=mcp_toolsets  
+    )
     
     async def invoke(self, query: str, session_id: str) -> AsyncIterable[dict]:
         """

@@ -60,6 +60,8 @@ class SearchAgentExecutor(AgentExecutor):
             )
             
             self.mcp_connector = MCPConnector(config_file=config_path)
+            
+            # ✅ Actually load the tools
             await self.mcp_connector.get_tools()
             
             print("✅ MCP property search tools loaded and ready")
