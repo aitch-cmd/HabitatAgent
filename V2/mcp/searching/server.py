@@ -56,6 +56,8 @@ class PropertySearchPipeline:
             if not candidates:
                 return []
             
+            # Step 3: Apply hybrid reranking if we have preferences
+            # FIX: Handle None rag_content properly
             rag_content = parsed_message.get("rag_content")
             rag_content = rag_content.strip() if rag_content else ""
             
@@ -83,6 +85,32 @@ class PropertySearchPipeline:
 
 # Initialize the pipeline once (singleton pattern)
 _pipeline = PropertySearchPipeline()
+
+
+def _serialize_document(doc: dict) -> dict:
+    """
+    Convert MongoDB document to JSON-serializable format.
+    Handles ObjectId and datetime objects.
+    """
+    from bson import ObjectId
+    from datetime import datetime
+    
+    serialized = {}
+    for key, value in doc.items():
+        if isinstance(value, ObjectId):
+            serialized[key] = str(value)
+        elif isinstance(value, datetime):
+            serialized[key] = value.isoformat()
+        elif isinstance(value, dict):
+            serialized[key] = _serialize_document(value)
+        elif isinstance(value, list):
+            serialized[key] = [
+                _serialize_document(item) if isinstance(item, dict) else item
+                for item in value
+            ]
+        else:
+            serialized[key] = value
+    return serialized
 
 
 @mcp.tool()
@@ -120,13 +148,11 @@ def search_properties(user_query: str, max_results: int = 10) -> str:
                 "results": []
             }, indent=2)
         
-        # Clean up results - remove MongoDB _id field for cleaner output
+        # Clean up results - handle ObjectId and datetime fields
         cleaned_results = []
         for listing in results:
-            # Convert ObjectId to string if present
-            if "_id" in listing:
-                listing["_id"] = str(listing["_id"])
-            cleaned_results.append(listing)
+            cleaned_listing = _serialize_document(listing)
+            cleaned_results.append(cleaned_listing)
         
         # Return formatted JSON response
         return json.dumps({
@@ -139,6 +165,8 @@ def search_properties(user_query: str, max_results: int = 10) -> str:
         
     except Exception as e:
         # Return error in structured format
+        import traceback
+        traceback.print_exc()
         return json.dumps({
             "status": "error",
             "message": f"Search failed: {str(e)}",
