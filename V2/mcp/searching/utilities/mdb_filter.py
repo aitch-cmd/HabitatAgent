@@ -12,7 +12,6 @@ class MongoDBFilter:
         try:
             self.collection.create_index([("title", "text")]) 
             self.collection.create_index([("rent_price", 1)])
-            print("Indexes ensured: text on 'title', ascending on 'rent_price'")
         except OperationFailure as e:
             print(f"Index creation failed: {e}")
 

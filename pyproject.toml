@@ -12,6 +12,7 @@ dependencies = [
     "langchain>=1.0.3",
     "langchain-core>=1.0.3",
     "langchain-google-genai>=3.0.1",
+    "langchain-openai>=1.0.2",
     "mcp[cli]>=1.20.0",
     "pymongo>=4.15.3",
     "sentence-transformers>=5.1.2",

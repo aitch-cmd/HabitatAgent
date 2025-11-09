@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
@@ -39,29 +39,30 @@ class UserMessageParser:
         }
     """
     
-    def __init__(self, model_name: str = "gemini-2.0-flash-exp", temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-4o-mini", temperature: float = 0.3):
         """
-        Initialize the message parser with LLM and output schema.
+        Initialize the message parser with OpenAI LLM and output schema.
         
         Args:
-            model_name: Google Gemini model to use (default: gemini-2.0-flash-exp for speed)
+            model_name: OpenAI model to use (default: gpt-4o-mini for cost-efficiency)
+                       Options: gpt-4o-mini, gpt-4o, gpt-3.5-turbo
             temperature: Creativity vs determinism (0.3 = more deterministic for extraction)
         """
-        # Load Google API key from environment variables
+        # Load OpenAI API key from environment variables
         load_dotenv()
-        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        openai_api_key = os.environ.get("OPENAI_API_KEY")
         
-        if not google_api_key:
-            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         
         # Create JSON output parser with Pydantic model
         self.output_parser = JsonOutputParser(pydantic_object=PropertySearchCriteria)
         
-        # Initialize Google Gemini LLM
-        self.llm = ChatGoogleGenerativeAI(
+        # Initialize OpenAI LLM
+        self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            google_api_key=google_api_key
+            openai_api_key=openai_api_key
         )
         
         # Create prompt template with clear extraction instructions

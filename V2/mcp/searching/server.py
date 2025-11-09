@@ -56,8 +56,8 @@ class PropertySearchPipeline:
             if not candidates:
                 return []
             
-            # Step 3: Apply hybrid reranking if we have preferences
-            rag_content = parsed_message.get("rag_content", "").strip()
+            rag_content = parsed_message.get("rag_content")
+            rag_content = rag_content.strip() if rag_content else ""
             
             if rag_content and len(candidates) > 1:
                 # Rerank using semantic similarity + keyword matching
