@@ -1,14 +1,32 @@
 from typing import List, Dict
 from sentence_transformers import SentenceTransformer, util
+from rank_bm25 import BM25Okapi
 import logging
 import yaml
 
 class HybridReranker:
-    """For handling the listings if it is less than 5."""
-
+    """
+    HybridReranker ranks property listings using a combination of:
+    
+    1. **Semantic Similarity** (via embedding-based cosine similarity)
+    2. **Keyword Relevance** (via BM25 keyword matching of user preferences)
+    
+    This reranker is intended to operate on a small candidate set (e.g., top 100 results)
+    retrieved from MongoDB (or another datastore) using minimal hard filters.
+    
+    Attributes:
+        embedder (SentenceTransformer): Used to compute dense embeddings for semantic scoring.
+        alpha (float): Weight of semantic similarity score in the final ranking formula.
+        beta (float): Weight of BM25-based keyword relevance score in the final ranking formula.
+    
+    Usage:
+        >>> reranker = HybridReranker()
+        >>> ranked_results = reranker.rerank(user_query, mongo_results)
+    """
+    
     @staticmethod
     def load_params(params_path: str) -> dict:
-        """Load parameters from a YAML file."""
+        """Load alpha and beta parameters from YAML config."""
         try:
             with open(params_path, 'r') as file:
                 params = yaml.safe_load(file)
@@ -24,16 +42,17 @@ class HybridReranker:
             logging.error('Unexpected error: %s', e)
             raise
 
-    CONFIG = load_params("params.yaml")["primary_ranker"]
+    CONFIG = load_params("V2/params.yaml")["primary_ranker"]
 
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
                  alpha: float = CONFIG["alpha"], beta: float = CONFIG["beta"]):
         """
-        Initialize the reranker.
+        Initializes the hybrid reranker model.
+        
         Args:
-            model_name: HuggingFace model for embeddings
-            alpha: weight for embedding similarity
-            beta: weight for preference keyword overlap
+            model_name (str): HuggingFace/ SentenceTransformers model for embedding generation.
+            alpha (float): Semantic similarity scoring weight.
+            beta (float): BM25 keyword relevance scoring weight.
         """
         self.embedder = SentenceTransformer(model_name, device="cpu")
         self.alpha = alpha
@@ -41,67 +60,70 @@ class HybridReranker:
 
     def build_listing_text(self, c: Dict) -> str:
         """
-        Build a text representation of a MongoDB listing
-        using the most relevant fields for semantic scoring.
+        Converts a MongoDB listing document into a text blob for embedding and BM25 scoring.
+        
+        Fields included:
+            - Title
+            - Description
+            - Bedroom/Bathroom info
+            - Appliances and included utilities
+            - Rental terms (fees and conditions)
+        
+        Args:
+            c (dict): Listing data dictionary (MongoDB document).
+        
+        Returns:
+            str: Concatenated text representing the listing.
         """
-        # Extract fields safely
         title = c.get("title", "")
         description = c.get("description", "")
-
-        # Bedrooms / bathrooms
         bed_bath = f"{c.get('bedroom', '')} bedroom {c.get('bathroom', '')} bathroom"
-
-        # Appliances (list under amenities.appliances)
         appliances = " ".join(c.get("amenities", {}).get("appliances", []))
-
-        # Utilities included (list under amenities.utilities_included)
         utilities = " ".join(c.get("amenities", {}).get("utilities_included", []))
-
-        # Rental terms (dict values like rent, fee, etc.)
         rental_terms = " ".join([str(v) for v in c.get("rental_terms", {}).values()])
-
-        # Final text blob
-        text = f"{title} {description} {bed_bath} {appliances} {utilities} {rental_terms}"
-        return text
+        
+        return f"{title} {description} {bed_bath} {appliances} {utilities} {rental_terms}"
 
     def rerank(self, user_query: Dict, candidates: List[Dict]) -> List[Dict]:
         """
-        Hybrid reranker: combines embedding similarity + preference matching
+        Reranks property candidates based on hybrid scoring:
+        
+        Scoring formula:
+            final_score = alpha * semantic_similarity + beta * BM25_keyword_score
+        
         Args:
-            user_query: {"location": "Greater Noida", "price": "", "rag_content": "pet friendly, balcony, furnished"}
-            candidates: list of listing dicts
+            user_query (dict): Parsed search query with 'rag_content' holding preference keywords.
+                               Example: {"rag_content": "furnished, balcony, pet friendly"}
+            candidates (list): List of MongoDB candidate listing dictionaries.
+        
         Returns:
-            Sorted list of candidates (without attaching scores)
+            list: Sorted list of candidate listings (highest score first).
         """
         rag_content = user_query.get("rag_content", "").lower()
         preferences = [p.strip() for p in rag_content.split(",") if p.strip()]
-
-        # Encode the user's preference query into an embedding
+        
+        # Prepare candidate documents for BM25 (tokenized)
+        corpus = [self.build_listing_text(c).lower().split() for c in candidates]
+        bm25 = BM25Okapi(corpus)
+        query_tokens = rag_content.split()
+        bm25_scores = bm25.get_scores(query_tokens)
+        
+        # Semantic embedding of user preferences
         query_emb = self.embedder.encode(rag_content, convert_to_tensor=True)
-
-        scores = []
-        for c in candidates:
-            # Build text representation of the listing
+        
+        final_scores = []
+        for idx, c in enumerate(candidates):
             text = self.build_listing_text(c)
-
-            # Encode the candidate listing into an embedding
             doc_emb = self.embedder.encode(text, convert_to_tensor=True)
-
-            # 1. Embedding similarity score
             emb_score = util.cos_sim(query_emb, doc_emb).item()
-
-            # 2. Preference keyword overlap score
-            pref_score = sum(1 for pref in preferences if pref in text.lower()) / max(len(preferences), 1)
-
-            # 3. Hybrid score
-            final_score = self.alpha * emb_score + self.beta * pref_score
-            scores.append(final_score)
-
-        # Sort candidates by score (without attaching the score)
-        sorted_candidates = [c for _, c in sorted(zip(scores, candidates),
-                                                key=lambda x: x[0],
-                                                reverse=True)]
-        return sorted_candidates
+            bm25_score = bm25_scores[idx]
+            
+            # Hybrid score
+            final_score = self.alpha * emb_score + self.beta * bm25_score
+            final_scores.append((final_score, c))
+        
+        final_scores.sort(reverse=True, key=lambda x: x[0])
+        return [c for _, c in final_scores]
 
 
 # ----------------------------
@@ -127,4 +149,4 @@ if __name__ == "__main__":
     reranked = reranker.rerank(user_message, candidates)
 
     for r in reranked:
-        print(r["title"], r["score"])
+        print(r["title"])
