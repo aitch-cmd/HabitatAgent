@@ -1,9 +1,0 @@
-# Initialize Gemini Pro
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
-    temperature=0.2,
-    google_api_key="AIzaSyCK33vqrJ9XZKmC6zgwEEgvld90HAfhuR8",
-)
