@@ -1,0 +1,4 @@
+This agent helps property owners and landlords create rental property listings through a conversational interface. 
+It collects all necessary property details including location, pricing, specifications, amenities, and contact information. 
+The agent validates input, handles optional fields gracefully, and saves complete listings to the database. 
+It supports various property types (apartments, houses, studios, condos) and ensures all required information is captured while allowing users to skip optional details.
