@@ -44,9 +44,8 @@ class UserMessageParser:
         Initialize the message parser with OpenAI LLM and output schema.
         
         Args:
-            model_name: OpenAI model to use (default: gpt-4o-mini for cost-efficiency)
-                       Options: gpt-4o-mini, gpt-4o, gpt-3.5-turbo
-            temperature: Creativity vs determinism (0.3 = more deterministic for extraction)
+            model_name
+            temperature
         """
         # Load OpenAI API key from environment variables
         load_dotenv()
