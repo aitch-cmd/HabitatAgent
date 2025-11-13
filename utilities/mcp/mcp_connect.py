@@ -1,29 +1,49 @@
-from V2.utilities.mcp.mcp_discovery import MCPDiscovery
+from utilities.mcp.mcp_discovery import MCPDiscovery
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPServerParams
 import asyncio
+from typing import Optional, List
 
 class MCPConnector:
     """
-    Discovers the MCP servers from the config.
-    Config will be loaded by the MCP Discovery class. 
-    Then it will list each server's tools
-    and then caches them as MCPToolsets that are compatible 
-    with Google's Agent Development Kit (ADK).
+    Discovers MCP servers from config and loads their tools.
+    Can filter to load only specific servers.
     """
 
-    def __init__(self, config_file: str = None):
+    def __init__(self, config_file: str = None, server_names: Optional[List[str]] = None):
+        """
+        Initialize MCP Connector.
+        
+        Args:
+            config_file: Path to mcp_config.json (optional)
+            server_names: List of specific server names to load. 
+                         If None, loads all servers.
+                         Example: ["property_search"] or ["listings_mongodb"]
+        """
         self.discovery = MCPDiscovery(config_file=config_file)
+        self.server_names = server_names  
         self.tools: list[MCPToolset] = []
 
     async def _load_all_tools(self):
         """
-        Loads all tools from the discovered MCP servers
-        and caches them as MCPToolsets.
-        This version ONLY supports streamable HTTP MCP server types.
+        Loads tools from discovered MCP servers.
+        Only loads servers specified in server_names filter (if provided).
         """
         tools = []
-        for name, server in self.discovery.list_servers().items():
+        all_servers = self.discovery.list_servers()
+
+        if self.server_names:
+            servers_to_load = {
+                name: server 
+                for name, server in all_servers.items() 
+                if name in self.server_names
+            }
+            print(f"[cyan]Filtering to load only: {self.server_names}")
+        else:
+            servers_to_load = all_servers
+            print(f"[cyan]Loading all available MCP servers")
+        
+        for name, server in servers_to_load.items():
             try:
                 if server.get("command") == "streamable_http":
                     url = server["args"][0]
@@ -36,8 +56,7 @@ class MCPConnector:
 
                 # Create the toolset instance
                 mcp_toolset = MCPToolset(connection_params=conn)
-                
-                # Get tools to verify connection works
+
                 available_tools = await asyncio.wait_for(
                     mcp_toolset.get_tools(),
                     timeout=10.0
@@ -45,24 +64,24 @@ class MCPConnector:
 
                 if available_tools:
                     tool_names = [tool.name for tool in available_tools]
-                    print(f"[bold green]Loaded tools from server [cyan]'{name}'[/cyan]: {tool_names}")
+                    print(f"[bold green] Loaded tools from server [cyan]'{name}'[/cyan]: {tool_names}")
                     tools.append(mcp_toolset)
                 else:
-                    print(f"[yellow] No tools found on server '{name}'")
+                    print(f"[yellow]No tools found on server '{name}'")
 
             except asyncio.TimeoutError:
-                print(f"[bold red]  Timeout loading tools from server '{name}'")
+                print(f"[bold red]✗ Timeout loading tools from server '{name}'")
             except ConnectionError as e:
-                print(f"[bold red]  Connection error loading tools from server '{name}': {e}")
+                print(f"[bold red]✗ Connection error loading tools from server '{name}': {e}")
             except Exception as e:
-                print(f"[bold red] Error loading tools from server '{name}': {e}")
+                print(f"[bold red]✗ Error loading tools from server '{name}': {e}")
 
         self.tools = tools
         
         if not self.tools:
-            print("[bold yellow]  WARNING: No MCP tools loaded. Make sure MCP servers are running!")
+            print("[bold yellow]⚠️  WARNING: No MCP tools loaded. Make sure MCP servers are running!")
         else:
-            print(f"[bold green] Successfully loaded {len(self.tools)} MCP toolset(s)")
+            print(f"[bold green]✓ Successfully loaded {len(self.tools)} MCP toolset(s)")
     
     async def get_tools(self) -> list[MCPToolset]:
         """

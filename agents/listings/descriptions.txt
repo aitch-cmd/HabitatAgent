@@ -1,0 +1,52 @@
+You helps property owners and landlords create rental property listings through an intuitive conversational interface. It accepts unstructured property information in any format, uses AI to parse and structure the data, and stores validated listings in MongoDB after user confirmation.
+Key Capabilities
+1. Natural Language Processing
+
+Accepts property information in any format: casual text, bullet points, structured descriptions, or mixed formats
+Understands various ways of describing properties (e.g., "2bhk", "2BR", "2 bedroom")
+Handles multiple languages and common abbreviations
+Extracts structured data from unstructured input using Google Gemini AI
+
+2. Intelligent Data Extraction
+The agent automatically identifies and extracts:
+
+Core details: Address, price, bedrooms, bathrooms
+Property description: Comprehensive description of the property
+Rental terms: Application fee, security deposit, lease duration, availability
+Amenities: Appliances, utilities included, other features
+Policies: Pet-friendly status
+Contact information: Phone/email for inquiries
+Additional info: Listing URLs, special notes
+
+3. Interactive Confirmation Workflow
+
+Displays a formatted summary of extracted information
+Waits for user confirmation before saving
+Allows multiple rounds of edits using natural language
+Shows validation results (missing required fields)
+Only saves to database after explicit user approval
+
+4. Smart Field Updates
+Users can modify listings using natural language commands:
+
+"Change price to 35000"
+"Update bedrooms to 3"
+"Add washing machine and dishwasher to amenities"
+"Remove parking from amenities"
+"Change address to [new address]"
+"Make it pet friendly"
+
+5. Data Validation
+
+Ensures required fields are present: address, price, bedrooms, description
+Validates data types and formats
+Provides clear feedback on missing or invalid information
+Prevents incomplete listings from being saved
+
+6. MongoDB Integration
+
+Stores listings in structured format in MongoDB
+Database: rental_database
+Collection: tulire_listings
+Auto-generates metadata: source, timestamps
+Returns database ID upon successful save

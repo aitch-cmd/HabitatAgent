@@ -5,6 +5,10 @@
             "args":[
             "http://localhost:9000/mcp"
           ]
-        }
+        },
+        "listings_mongodb": {
+            "command": "streamable_http", 
+            "args": ["http://localhost:9001/mcp"]
+          }
     }
 }

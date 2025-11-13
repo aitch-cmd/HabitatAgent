@@ -1,8 +1,3 @@
-"""
-Search Agent Server
-Helps students find rental accommodations using natural language queries.
-"""
-
 from a2a.types import AgentSkill, AgentCard, AgentCapabilities
 import click
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -44,10 +39,10 @@ async def initialize_and_run(host: str, port: int):
     )
 
     # Pre-initialize the executor
-    print("🔄 Pre-initializing Search Agent...")
+    print("Pre-initializing Search Agent...")
     executor = SearchAgentExecutor()
     await executor.create()
-    print("✅ Search Agent ready to accept requests")
+    print("Search Agent ready to accept requests")
 
     request_handler = DefaultRequestHandler(
         agent_executor=executor,
@@ -59,8 +54,8 @@ async def initialize_and_run(host: str, port: int):
         http_handler=request_handler
     )
 
-    print(f"🚀 Starting Search Agent on http://{host}:{port}")
-    print(f"📋 Agent Card available at: http://{host}:{port}/.well-known/agent.json")
+    print(f"Starting Search Agent on http://{host}:{port}")
+    print(f"Agent Card available at: http://{host}:{port}/.well-known/agent.json")
     
     # Run the server
     config = uvicorn.Config(server.build(), host=host, port=port, log_level="info")
