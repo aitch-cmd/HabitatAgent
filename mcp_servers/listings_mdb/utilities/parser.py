@@ -57,7 +57,7 @@ class ParserListings:
         # Initialize OpenAI LLM
         self.llm = ChatGoogleGenerativeAI(
             model=model_name,
-            openai_api_key=google_api_key
+            google_api_key=google_api_key
         )
 
         self.prompt = ChatPromptTemplate.from_template("""You are a property listing parser. Extract structured information from unstructured property listings.

@@ -258,4 +258,4 @@ Your listing is now live.
 # ---------------------------------------------------------------
 if __name__ == "__main__":
     print("🚀 MCP Server running on port 9001")
-    mcp.run()
+    mcp.run(transport="streamable-http")
