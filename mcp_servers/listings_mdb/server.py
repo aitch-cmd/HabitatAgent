@@ -88,23 +88,31 @@ def validate_listing(d: Dict[str, Any]) -> Tuple[bool, list]:
 # ---------------------------------------------------------------
 
 @mcp.tool()
+@mcp.tool()
 def parse_and_confirm_listing(raw_listing: str) -> str:
     """
     Parse listing text → return normalized JSON + summary.
     (Does NOT save to DB.)
     """
-    parsed = parser.extract(raw_listing)
-    if not parsed or parsed.get("Parsed Text") is None:
-        return "❌ Error parsing listing."
+    try:
+        parsed = parser.extract(raw_listing)
+        
+        if not parsed or parsed.get("error"):
+            error_msg = parsed.get("error", "Unknown parsing error") if parsed else "Parser returned None"
+            logger.error(f"Parsing failed: {error_msg}")
+            return f"❌ Error parsing listing: {error_msg}"
+        
+        if not parsed.get("address") or not parsed.get("price"):
+            return "❌ Error: Missing required fields (address or price)"
+        
+        # Add metadata
+        parsed["source"] = "user_created"
+        parsed["last_updated"] = datetime.now().strftime("%Y-%m-%d")
 
-    # Add metadata
-    parsed["source"] = "user_created"
-    parsed["last_updated"] = datetime.now().strftime("%Y-%m-%d")
+        ok, errs = validate_listing(parsed)
+        summary = format_listing_summary(parsed)
 
-    ok, errs = validate_listing(parsed)
-    summary = format_listing_summary(parsed)
-
-    return f"""
+        return f"""
 {summary}
 
 Validation: {"OK" if ok else ", ".join(errs)}
@@ -118,6 +126,9 @@ Parsed JSON:
 {json.dumps(parsed, indent=2)}
 ```
 """
+    except Exception as e:
+        logger.error(f"Exception in parse_and_confirm_listing: {str(e)}")
+        return f"❌ Error parsing listing: {str(e)}"
 
 # ---------------------------------------------------------------
 # TOOL 2 – Update fields
