@@ -189,9 +189,9 @@ def print_json_response(response: Any, title: str) -> None:
         response: Response object to display
         title: Section title for the output
     """
-    print(f"\n=== {title} ===")  # Section title for clarity
+    print(f"\n=== {title} ===")  
     try:
-        if hasattr(response, "root"):  # Check if response is wrapped by SDK
+        if hasattr(response, "root"): 
             data = response.root.model_dump(mode="json", exclude_none=True)
         else:
             data = response.model_dump(mode="json", exclude_none=True)

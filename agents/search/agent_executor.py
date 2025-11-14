@@ -32,10 +32,8 @@ class SearchAgentExecutor(AgentExecutor):
         """
         Factory method to initialize the SearchAgentExecutor.
         """
-        print("🚀 Initializing Search Agent...")
         await self.agent.create()
         self._initialized = True
-        print("✅ Search Agent fully initialized and ready")
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         """

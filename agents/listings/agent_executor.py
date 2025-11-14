@@ -84,3 +84,6 @@ class ListingAgentExecutor(AgentExecutor):
                 )
             )
             raise
+    
+    async def cancel(self, request: RequestContext, event_queue: EventQueue) -> Task | None:
+        raise ServerError(error=UnsupportedOperationError())

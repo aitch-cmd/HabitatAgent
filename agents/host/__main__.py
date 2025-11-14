@@ -20,23 +20,21 @@ async def initialize_and_run(host: str, port: int):
     
     # Define what this agent can do
     skill = AgentSkill(
-        id="property_search_skill",
-        name="property_search_skill",
-        description="Search for rental properties using natural language queries with filters for location, price, bedrooms, and amenities.",
-        tags=["search", "rental", "accommodation", "student", "property"],
+        id="host_agent_skill",
+        name="host_agent_skill",
+        description="A simple orchestrator for orchestration with A2A agents and MCP tools",
+        tags=["host", "orchestrator"],
         examples=[
             "Find 2BHK apartments in Bangalore under 20000",
             "Show me furnished flats near MIT with parking",
-            "3BHK pet-friendly apartment under 30k",
-            "Studio apartment in Koramangala with gym",
-            "Looking for 1BHK near MG Road under 15000"
+            "Post my listings and upload to your database"
         ]
     )
     
     # Create the agent's business card
     agent_card = AgentCard(
-        name="search_agent",
-        description="Student accommodation search agent that finds rental properties based on natural language queries, preferences, and budget constraints.",
+        name="host_agent",
+        description="A simple orchestrator for orchestrating tasks",
         url=f"http://{host}:{port}/",
         version="1.0.0",
         defaultInputModes=["text"],
