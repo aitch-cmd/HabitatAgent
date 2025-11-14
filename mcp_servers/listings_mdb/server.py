@@ -4,7 +4,7 @@ import re
 import logging
 from datetime import datetime
 from typing import Dict, Any, Tuple
-
+from bson import ObjectId
 from mcp.server.fastmcp import FastMCP
 from db.connection import MongoDBClient
 from mcp_servers.listings_mdb.utilities.parser import ParserListings
@@ -263,6 +263,61 @@ Database ID: {result.inserted_id}
 
 Your listing is now live.
 """
+
+# ---------------------------------------------------------------
+# TOOL 4 – Delete
+# ---------------------------------------------------------------
+@mcp.tool()
+def delete_listing(listing_id: str) -> str:
+    """
+    Delete a listing from MongoDB using its ID.
+    
+    Args:
+        listing_id: The MongoDB ObjectId of the listing to delete (as string)
+    
+    Returns:
+        Success or error message
+    """
+    if collection is None:
+        return "❌ MongoDB is not connected."
+    
+    try:
+        # Convert string to ObjectId
+        object_id = ObjectId(listing_id)
+    except Exception as e:
+        return f"❌ Invalid listing ID format: {e}"
+    
+    try:
+        # First, check if the listing exists
+        existing = collection.find_one({"_id": object_id})
+        
+        if not existing:
+            return f"❌ Listing not found with ID: {listing_id}"
+        
+        # Show what's being deleted
+        address = existing.get("address", "Unknown")
+        price = existing.get("price", "N/A")
+        
+        # Delete the listing
+        result = collection.delete_one({"_id": object_id})
+        
+        if result.deleted_count == 1:
+            return f"""
+✅ Listing Deleted Successfully
+
+**Deleted Listing:**
+- ID: {listing_id}
+- Address: {address}
+- Price: ₹{price}
+
+The listing has been permanently removed from the database.
+"""
+        else:
+            return f"❌ Failed to delete listing with ID: {listing_id}"
+            
+    except Exception as e:
+        logger.error(f"Error deleting listing: {e}")
+        return f"❌ Error deleting listing: {e}"
 
 # ---------------------------------------------------------------
 # MAIN
