@@ -66,7 +66,7 @@ class SearchAgent:
 
         return LlmAgent(
             name="search_agent",
-            model="gemini-2.0-flash-exp",  
+            model="gemini-2.5-flash",  
             instruction=self.system_instruction,
             description=self.description,
             tools=mcp_toolsets  

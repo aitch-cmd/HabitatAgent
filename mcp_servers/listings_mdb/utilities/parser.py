@@ -3,7 +3,7 @@ import json
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 
@@ -38,7 +38,7 @@ class ParserListings:
     """ 
     Parses user search queries into structured fields for property storing.
     """
-    def __init__(self, model_name: str = "gemini-2.5-flash"):
+    def __init__(self, model_name: str = "gpt-4o-mini"):
         """
         Initialize the message parser with Gemini LLM and output schema.
         
@@ -46,18 +46,18 @@ class ParserListings:
             model_name
         """
         load_dotenv()
-        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        openai_api_key = os.environ.get("OPENAI_API_KEY")
         
-        if not google_api_key:
-            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         
         # Create JSON output parser with Pydantic model
         self.output_parser = JsonOutputParser(pydantic_object=PropertyListing)
         
         # Initialize OpenAI LLM
-        self.llm = ChatGoogleGenerativeAI(
+        self.llm = ChatOpenAI(
             model=model_name,
-            google_api_key=google_api_key
+            openai_api_key=openai_api_key
         )
 
         self.prompt = ChatPromptTemplate.from_template("""You are a property listing parser. Extract structured information from unstructured property listings.

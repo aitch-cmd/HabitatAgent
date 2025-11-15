@@ -28,7 +28,7 @@ async def initialize_and_run(host: str, port: int):
     )
     
     agent_card = AgentCard(
-        name="listing_creation_agent",
+        name="listing_agent",
         description="Property listing creation agent that helps landlords and property owners create rental listings through conversational interface. Accepts unstructured property information, parses it intelligently, validates required fields, allows edits, and stores listings in MongoDB after user confirmation.",
         url=f"http://{host}:{port}/",
         version="1.0.0",

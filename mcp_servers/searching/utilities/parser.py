@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
@@ -39,7 +39,7 @@ class UserMessageParser:
         }
     """
     
-    def __init__(self, model_name: str = "gemini-2.5-flash", temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-4o-mini", temperature: float = 0.3):
         """
         Initialize the message parser with OpenAI LLM and output schema.
         
@@ -48,18 +48,18 @@ class UserMessageParser:
             temperature
         """
         load_dotenv()
-        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        openai_api_key = os.environ.get("OPENAI_API_KEY")
         
-        if not google_api_key:
-            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         
         self.output_parser = JsonOutputParser(pydantic_object=PropertySearchCriteria)
         
         # Initialize OpenAI LLM
-        self.llm = ChatGoogleGenerativeAI(
+        self.llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            google_api_key=google_api_key
+            api_key=openai_api_key
         )
         
         # Create prompt template with clear extraction instructions

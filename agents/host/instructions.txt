@@ -68,7 +68,7 @@ Your action: `_delegate_task(agent_name="search_agent", message="Find 2BHK apart
 **Example 2: Property Listing**
 User: "I want to list my 3-bedroom house for rent"
 Your thought: User wants to CREATE a listing → listing_agent
-Your action: `_delegate_task(agent_name="listing_agent", message="I want to list my 3-bedroom house for rent")`
+Your action: `_delegate_task(agent_name="listings_agent", message="I want to list my 3-bedroom house for rent")`
 
 **Example 3: Alert Creation**
 User: "Notify me when 1BHK apartments under $1500 are available in Brooklyn"

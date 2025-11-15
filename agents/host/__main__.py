@@ -1,12 +1,7 @@
-"""
-Search Agent Server
-Helps students find rental accommodations using natural language queries.
-"""
-
 from a2a.types import AgentSkill, AgentCard, AgentCapabilities
 import click
 from a2a.server.request_handlers import DefaultRequestHandler
-from agents.search.agent_executor import SearchAgentExecutor 
+from agents.host.agent_executor import HostAgentExecutor 
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.apps import A2AStarletteApplication
 import uvicorn
@@ -44,7 +39,7 @@ async def initialize_and_run(host: str, port: int):
     )
 
     print("Pre-initializing Search Agent...")
-    executor = SearchAgentExecutor()
+    executor = HostAgentExecutor() 
     await executor.create()
     print("Search Agent ready to accept requests")
 
@@ -60,7 +55,6 @@ async def initialize_and_run(host: str, port: int):
         http_handler=request_handler
     )
 
-    # Start the server
     print(f"🔍 Starting Search Agent on http://{host}:{port}")
     print(f"📋 Agent Card available at: http://{host}:{port}/.well-known/agent.json")
     
@@ -76,9 +70,6 @@ async def initialize_and_run(host: str, port: int):
 def main(host: str, port: int):
     """
     Start the Search Agent server.
-    
-    This agent helps students find rental accommodations based on natural language queries.
-    It uses MongoDB filtering and hybrid reranking to find the best matches.
     """
     # Run the async initialization and server
     asyncio.run(initialize_and_run(host, port))

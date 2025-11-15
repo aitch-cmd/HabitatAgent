@@ -30,8 +30,8 @@ class HostAgent:
     """
 
     def __init__(self):
-        self.system_instruction = load_instructions_file("V2/agentsV2/host/instructions.txt")
-        self.description = load_instructions_file("V2/agentsV2/host/descriptions.txt")
+        self.system_instruction = load_instructions_file("agents/host/instructions.txt")
+        self.description = load_instructions_file("agents/host/descriptions.txt")
         self.AgentDiscovery = AgentDiscovery()
         self._agent = None
         self._user_id = "host_agent_user"
@@ -88,7 +88,7 @@ class HostAgent:
             available = [c.name for c in cards]
             return f"❌ Agent '{agent_name}' not found. Available agents: {available}"
         
-        print(f"✅ Delegating to {matched_card.name}")
+        print(f"Delegating to {matched_card.name}")
         connector = AgentConnector(agent_card=matched_card)
 
         try:
