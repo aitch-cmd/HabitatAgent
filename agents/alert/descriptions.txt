@@ -1,0 +1,133 @@
+A conversational AI assistant that helps users create and manage real-time property alerts. Users can set up custom alerts based on location and budget, and receive instant email notifications when matching properties are listed.
+
+## What This Agent Does
+
+This agent connects to a Property Alert MCP Server to:
+- **Create custom property alerts** from natural language (e.g., "Alert me for apartments in Brooklyn under $2500 at my@email.com")
+- **Search current property listings** based on location and price criteria
+- **Manage user alerts** - view, update, or delete existing alerts
+- **Provide instant notifications** via email when new matching properties are added
+
+## Key Features
+
+### 1. Natural Language Alert Creation
+Users can describe what they're looking for in plain English:
+- "I want a place in Jersey City under 3k, email me at john@email.com"
+- "Alert me for properties in Manhattan at sarah@example.com"
+- "Looking for apartments in Brooklyn around $2000, contact: mike@mail.com"
+
+The agent extracts:
+- **Email** (required)
+- **Location** (optional - city, neighborhood, or area)
+- **Max Price** (optional - budget limit)
+
+### 2. Real-Time Alert System
+Once an alert is created:
+- A background monitor watches for new property listings
+- When a matching property is added, users get instant email notifications
+- Includes full property details: address, price, bedrooms, bathrooms, URL
+
+### 3. Property Search
+Users can search current listings:
+- Filter by location and/or price
+- View up to 20 matching properties
+- Get direct links to full listings
+
+### 4. Alert Management
+- **View all alerts** for an email address
+- **Delete specific alerts** when no longer needed
+- See alert details (location, price, creation date)
+
+## How It Works
+
+```
+1. User creates alert → "Jersey City under $3000 at user@email.com"
+2. Agent extracts preferences → Location: Jersey City, Price: $3000, Email: user@email.com
+3. Alert saved to database → Active alert created
+4. New listing added → Background monitor detects it
+5. Match found → Listing in Jersey City for $2500
+6. Email sent → User gets instant notification with property details
+```
+
+## Use Cases
+
+### For Apartment Hunters
+"I'm looking for a 2-bedroom in Brooklyn under $2800. Can you alert me when something comes up?"
+
+### For Real Estate Agents
+"Set up alerts for all my clients - I need to monitor properties in multiple neighborhoods."
+
+### For Investors
+"Alert me for any properties under $2000 in Jersey City - I want to act fast on good deals."
+
+### For People Relocating
+"I'm moving to New York next month. Can you notify me about apartments in Manhattan around $3500?"
+
+## Example Conversations
+
+**Quick Setup:**
+```
+User: "Alert me for properties in Jersey City under $3000 at john@email.com"
+Agent: ✅ Alert created! You'll receive email notifications when properties matching:
+       - Location: Jersey City
+       - Max Price: $3,000
+       are listed.
+```
+
+**Guided Setup:**
+```
+User: "I need alerts for Brooklyn apartments"
+Agent: "I can help you set up an alert for Brooklyn! What email should I send notifications to?"
+User: "sarah@email.com, under $2500"
+Agent: ✅ Perfect! Alert created for Brooklyn apartments under $2,500...
+```
+
+**Managing Alerts:**
+```
+User: "Show my alerts for john@email.com"
+Agent: "You have 2 active alerts:
+       1. Jersey City - Max $3,000
+       2. Brooklyn - Max $2,500
+       Would you like to delete or modify any?"
+```
+
+## Technical Details
+
+### MCP Server Connection
+- Server: `alert_service` on port 9002
+- Protocol: FastMCP with stateless HTTP transport
+- Database: MongoDB (`rental_database` collection)
+
+### Alert Matching Logic
+- **Location**: Case-insensitive partial match (e.g., "Jersey City" matches "123 Main St, Jersey City, NJ")
+- **Price**: Alert max price must be ≥ listing price
+- **Both criteria must match** for notification to be sent
+
+### Real-Time Monitoring
+- Uses MongoDB Change Streams
+- Detects new listings instantly (no polling)
+- Processes matches and sends emails within seconds
+
+## User Benefits
+
+✅ **Never miss a property** - Instant notifications when matches are found  
+✅ **Set and forget** - Alerts run automatically in the background  
+✅ **Multiple alerts** - Track different locations and budgets simultaneously  
+✅ **Easy management** - View, update, or delete alerts anytime  
+✅ **Direct links** - Email includes URL to view full listing immediately  
+
+## Agent Personality
+
+This agent is:
+- **Helpful** - Guides users through the alert setup process
+- **Proactive** - Suggests creating alerts after property searches
+- **Clear** - Explains how the system works in simple terms
+- **Patient** - Asks for missing information (like email) politely
+- **Responsive** - Provides immediate feedback on actions
+
+## Privacy & Data
+
+- Alerts are stored securely in MongoDB
+- Emails are only sent for matching properties
+- Users can delete alerts anytime
+- No spam - only relevant notifications

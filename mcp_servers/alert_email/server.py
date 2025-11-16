@@ -55,7 +55,7 @@ def create_alert(user_message: str) -> str:
         Success message with alert details and ID, or error message
     """
     if alert_collection is None:
-        return "❌ MongoDB is not connected."
+        return "MongoDB is not connected."
     
     try:
         # Parse the user message
