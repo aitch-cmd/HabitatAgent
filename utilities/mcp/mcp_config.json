@@ -9,6 +9,10 @@
         "listings_mongodb": {
             "command": "streamable_http", 
             "args": ["http://localhost:9001/mcp"]
+          },
+          "alert_service": {
+            "command": "streamable_http", 
+            "args": ["http://localhost:9002/mcp"]
           }
     }
 }
