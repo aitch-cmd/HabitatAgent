@@ -55,7 +55,7 @@ def create_alert(user_message: str) -> str:
         Success message with alert details and ID, or error message
     """
     if alert_collection is None:
-        return "MongoDB is not connected."
+        return "❌ MongoDB is not connected."
     
     try:
         # Parse the user message
@@ -89,14 +89,17 @@ Example: "Alert me for properties in Bangalore at john.doe@gmail.com"
         result = alert_collection.insert_one(alert_doc)
         alert_id = str(result.inserted_id)
         
-        # Format response
+        # Format response - FIXED VERSION
+        price_display = f"${price:,}" if price else "Any price"
+        location_display = location if location else "Any location"
+        
         response = f"""
 ✅ Alert Created Successfully!
 
 **Alert ID**: {alert_id}
 **Email**: {email}
-**Location**: {location if location else "Any location"}
-**Max Price**: ${price:,} if price else "Any price"
+**Location**: {location_display}
+**Max Price**: {price_display}
 
 📧 You'll receive notifications when new properties matching your criteria are listed.
 
@@ -111,7 +114,6 @@ To manage your alerts:
     except Exception as e:
         logger.error(f"Error creating alert: {e}")
         return f"❌ Error creating alert: {str(e)}"
-
 
 # ---------------------------------------------------------------
 # TOOL 2 – Get User Alerts
@@ -150,12 +152,13 @@ Example: "Alert me for 2BHK in Bangalore under 30k at {email}"
             location = alert.get("location", "Any location")
             price = alert.get("price")
             created = alert.get("created_at").strftime("%Y-%m-%d %H:%M")
+            price_display = f"${price:,}" if price else "Any price"
             
             response += f"""
 **Alert {i}**
 - ID: {alert_id}
 - Location: {location}
-- Max Price: ${price:,} if price else "Any price"
+- Max Price: {price_display}
 - Created: {created}
 ─────────────────────────
 """
@@ -165,8 +168,6 @@ Example: "Alert me for 2BHK in Bangalore under 30k at {email}"
     except Exception as e:
         logger.error(f"Error retrieving alerts: {e}")
         return f"❌ Error retrieving alerts: {str(e)}"
-
-
 
 # ---------------------------------------------------------------
 # TOOL 3 – Delete Alert
