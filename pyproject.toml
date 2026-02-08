@@ -16,6 +16,8 @@ dependencies = [
     "mcp[cli]>=1.20.0",
     "pymongo>=4.15.3",
     "rank-bm25>=0.2.2",
+    "redis>=7.1.0",
+    "sendgrid>=6.12.5",
     "sentence-transformers>=5.1.2",
     "uvicorn>=0.38.0",
 ]
